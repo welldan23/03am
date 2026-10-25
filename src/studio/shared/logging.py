@@ -61,13 +61,49 @@ class RedactSecrets:
         return event_dict
 
 
-def configure_logging(level: str = "INFO") -> None:
+class SecretFilter(logging.Filter):
+    """Sensor secret di log library standar (aiogram, aiohttp) yang tidak lewat structlog."""
+
+    def __init__(self, secrets: frozenset[str]) -> None:
+        super().__init__()
+        self._secrets = frozenset(s for s in secrets if len(s) >= 6)
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if not self._secrets:
+            return True
+        message = record.getMessage()
+        scrubbed = _scrub(message, self._secrets)
+        if scrubbed != message or record.args:
+            record.msg, record.args = scrubbed, None
+        if record.exc_info and record.exc_info[1] is not None:
+            # Teks exception ikut dicetak di traceback; ganti dengan versi yang disensor.
+            record.exc_text = _scrub(
+                logging.Formatter().formatException(record.exc_info), self._secrets
+            )
+            record.exc_info = None
+        return True
+
+
+def configure_logging(level: str = "INFO", extra_secrets: frozenset[str] = frozenset()) -> None:
+    """`extra_secrets`: nilai rahasia yang tidak ada di environment (misalnya dari .env)."""
+    secrets = secret_values_from_env() | frozenset(s for s in extra_secrets if len(s) >= 6)
+    root = logging.getLogger()
+    for existing in list(root.filters):
+        if isinstance(existing, SecretFilter):
+            root.removeFilter(existing)
+    handler_filter = SecretFilter(secrets)
+    for handler in root.handlers:
+        for existing in list(handler.filters):
+            if isinstance(existing, SecretFilter):
+                handler.removeFilter(existing)
+        handler.addFilter(handler_filter)
+    root.addFilter(handler_filter)
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso", utc=True),
-            RedactSecrets(),
+            RedactSecrets(secrets),
             structlog.processors.JSONRenderer(),
         ],
         wrapper_class=structlog.make_filtering_bound_logger(

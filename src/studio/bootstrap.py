@@ -28,7 +28,15 @@ from studio.modules.budget import (
     load_pricing,
 )
 from studio.modules.calls import LLMClient, MeteredCaller, PromptLibrary, load_llm_config
+from studio.modules.controller import (
+    ActionCodes,
+    ControllerConfig,
+    ConversationStore,
+    StudioController,
+    UpdateLog,
+)
 from studio.modules.episodes import EpisodeService
+from studio.modules.notifications import Outbox
 from studio.modules.research import ResearchConfig, ResearchEngine
 from studio.modules.scripting import ScriptEngine, ScriptingConfig
 from studio.modules.workflow import WorkflowService
@@ -66,6 +74,11 @@ class App:
     research: ResearchEngine
     scripts: ScriptEngine
     workflow: WorkflowService
+    controller: StudioController
+    actions: ActionCodes
+    conversations: ConversationStore
+    updates: UpdateLog
+    outbox: Outbox
 
     def worker(self, worker_id: str | None = None) -> Worker:
         return Worker(
@@ -174,6 +187,29 @@ def build_app(
         stages=stages,
         scripting=scripting_config,
     )
+    actions = ActionCodes(db, clock, audit)
+    controller = StudioController(
+        db=db,
+        clock=clock,
+        audit=audit,
+        owners=owners,
+        episodes=episodes,
+        artifacts=artifacts,
+        approvals=approvals,
+        budget=budget,
+        plan=plan,
+        queue=queue,
+        calls=caller,
+        workflow=workflow,
+        scripting=scripting_config,
+        actions=actions,
+        config=ControllerConfig(
+            action_ttl=timedelta(minutes=settings.action_ttl_minutes),
+            approval_ttl_hours=settings.approval_ttl_hours,
+            paid_providers_enabled=settings.paid_providers_enabled,
+            notification_recipients=settings.telegram_owner_ids,
+        ),
+    )
     return App(
         settings=settings,
         clock=clock,
@@ -192,4 +228,11 @@ def build_app(
         research=research,
         scripts=scripts,
         workflow=workflow,
+        controller=controller,
+        actions=actions,
+        conversations=ConversationStore(
+            db, clock, step_ttl=timedelta(minutes=settings.conversation_step_ttl_minutes)
+        ),
+        updates=UpdateLog(db, clock),
+        outbox=Outbox(db, clock),
     )

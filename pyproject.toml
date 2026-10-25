@@ -5,6 +5,7 @@ description = "03:AM — AI Documentary Studio (modular monolith)"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "aiogram>=3.31,<4",
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
     "pyyaml>=6.0.2",
@@ -36,7 +37,9 @@ packages = ["src/studio"]
 # --- pytest -----------------------------------------------------------------
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --strict-markers --disable-socket"
+# --allow-unix-socket: event loop asyncio (bot Telegram) butuh socketpair lokal AF_UNIX.
+# Socket jaringan (AF_INET/AF_INET6) tetap diblokir.
+addopts = "-ra --strict-markers --disable-socket --allow-unix-socket"
 xfail_strict = true
 
 # --- ruff -------------------------------------------------------------------
@@ -73,11 +76,12 @@ type = "layers"
 layers = [
     "studio.interfaces",
     "studio.bootstrap",
+    "studio.modules.controller",
     "studio.modules.workflow",
     "studio.modules.scripting",
     "studio.modules.research",
     "studio.modules.calls",
-    "studio.modules.episodes | studio.modules.approvals | studio.modules.budget | studio.modules.artifacts",
+    "studio.modules.episodes | studio.modules.approvals | studio.modules.budget | studio.modules.artifacts | studio.modules.notifications",
     "studio.modules.audit",
     "studio.infra | studio.providers",
     "studio.shared",

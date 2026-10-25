@@ -16,6 +16,7 @@ import json
 import os
 import sqlite3
 import sys
+import time
 from collections.abc import Callable, Sequence
 from decimal import Decimal, InvalidOperation
 from typing import Any, TextIO
@@ -368,8 +369,51 @@ def cmd_pipeline_run(app: App, args: argparse.Namespace, out: TextIO) -> None:
 
 def cmd_worker_run(app: App, args: argparse.Namespace, out: TextIO) -> None:
     worker = app.worker()
+    if args.loop:
+        # Mode layanan (misalnya systemd di VPS): proses job terus, tidur saat antrean kosong.
+        print("Worker berjalan. Tekan Ctrl+C untuk berhenti.", file=out)
+        processed = 0
+        try:
+            while True:
+                if worker.run_once() is None:
+                    time.sleep(args.idle_seconds)
+                else:
+                    processed += 1
+        except KeyboardInterrupt:
+            print(f"Worker berhenti. {processed} job diproses.", file=out)
+        return
     count = (1 if worker.run_once() else 0) if args.once else worker.run_until_idle(args.max_jobs)
     print(f"{count} job diproses.", file=out)
+
+
+# --- Telegram (Fase 3) -----------------------------------------------------
+
+
+def cmd_bot_check(app: App, args: argparse.Namespace, out: TextIO) -> None:
+    from studio.interfaces.telegram.runner import check_bot_settings
+
+    settings = app.settings
+    problems = check_bot_settings(settings)
+    token = settings.telegram_bot_token
+    print(f"Token bot      : {'terisi (disembunyikan)' if token else 'BELUM DIISI'}", file=out)
+    print(f"Owner Telegram : {', '.join(settings.telegram_owner_ids) or '-'}", file=out)
+    print(f"Worker di bot  : {'ya' if settings.telegram_run_worker else 'tidak'}", file=out)
+    print(
+        f"API berbayar   : {'AKTIF' if settings.paid_providers_enabled else 'nonaktif'}", file=out
+    )
+    if problems:
+        raise StudioError("; ".join(problems))
+    print("Konfigurasi bot siap. Jalankan `studio bot run`.", file=out)
+
+
+def cmd_bot_run(app: App, args: argparse.Namespace, out: TextIO) -> None:
+    from studio.interfaces.telegram.runner import main as run_bot
+
+    settings = app.settings
+    app.close()  # runner membuat koneksinya sendiri (thread inti + thread worker)
+    code = run_bot(settings)
+    if code != 0:
+        raise StudioError("bot berhenti dengan error konfigurasi")
 
 
 def cmd_jobs_list(app: App, args: argparse.Namespace, out: TextIO) -> None:
@@ -555,6 +599,14 @@ def build_parser() -> argparse.ArgumentParser:
     p = add(worker, "run", cmd_worker_run, "Proses job sampai antrean kosong")
     p.add_argument("--once", action="store_true")
     p.add_argument("--max-jobs", type=int, default=1000)
+    p.add_argument("--loop", action="store_true", help="terus berjalan (mode layanan)")
+    p.add_argument("--idle-seconds", type=float, default=2.0)
+
+    bot = groups.add_parser("bot", help="Bot Telegram (Fase 3)").add_subparsers(
+        dest="cmd", required=True
+    )
+    add(bot, "check", cmd_bot_check, "Periksa konfigurasi bot (tanpa jaringan)")
+    add(bot, "run", cmd_bot_run, "Jalankan bot dengan long polling")
 
     jobs = groups.add_parser("jobs", help="Lihat antrean job").add_subparsers(
         dest="cmd", required=True

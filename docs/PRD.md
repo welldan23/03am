@@ -121,11 +121,13 @@ Prioritas: **P0** = wajib MVP, **P1** = penting setelah MVP, **P2** = nanti.
 
 ### 7.1 Telegram interface
 
-- **FR-TG-01 (P0)** Hanya user ID di allowlist yang bisa memakai bot.
-- **FR-TG-02 (P0)** Perintah dasar: `/start`, `/new` (episode baru), `/status`, `/episodes`, `/budget`, `/cancel <id>`, `/help`.
-- **FR-TG-03 (P0)** Setiap gate approval tampil sebagai pesan ringkas + tombol inline `✅ Setuju` / `✏️ Revisi` / `❌ Tolak`.
+- **FR-TG-01 (P0)** Hanya user ID numerik di allowlist (`telegram:<id>`) yang bisa memakai bot, hanya lewat chat pribadi. Grup diabaikan. Non-owner tidak bisa membaca episode/riset/naskah/biaya/approval dan percobaannya dicatat di audit log.
+- **FR-TG-02 (P0)** Perintah dasar: `/start`, `/menu`, `/status`, `/episodes`, `/budget`, `/cancel` (batalkan langkah percakapan), `/help`. Menu utama: Buat Dokumenter, Episode Aktif, Ide Topik, Review Riset, Review Naskah, Approval, Status Produksi, Budget, Pengaturan.
+- **FR-TG-02a (P0)** Percakapan natural berbasis aturan (Fase 3), misalnya "Cari topik sejarah yang menarik", "Pilih format 90 detik", "Naskahnya terlalu kaku, buat lebih natural". Kalau ambigu, bot bertanya balik. Keputusan approval tidak pernah diambil dari teks bebas.
+- **FR-TG-02b (P0)** Review riset (fakta, klaim diperdebatkan, sumber & kualitasnya, catatan fact-check, sumber per klaim) dan naskah (per segmen, durasi, rujukan klaim, catatan editorial) dengan pagination.
+- **FR-TG-03 (P0)** Setiap gate approval tampil sebagai pesan ringkas + tombol inline `✅ Approve` / `❌ Reject` / `✏️ Request Revision` / `🔍 Detail`. G2/G3 diberi label simulasi selama tahap produksi masih placeholder.
 - **FR-TG-04 (P0)** Tombol approval **sekali pakai** dan terikat ke versi konten (kalau naskah berubah, tombol lama mati).
-- **FR-TG-05 (P0)** Notifikasi progres tiap tahap selesai/gagal.
+- **FR-TG-05 (P0)** Notifikasi progres (topik siap/G0, riset dimulai, brief selesai, naskah selesai, G1, gagal, dicoba ulang, selesai) lewat outbox persisten: tidak hilang saat restart dan tidak dobel ke penerima yang sama.
 - **FR-TG-06 (P0)** Kirim preview video (≤ 50 MB, batas upload Bot API) dan dokumen naskah/storyboard/laporan fakta.
 - **FR-TG-07 (P1)** Ngobrol bebas dengan AI Director (Hermes) **di bot yang sama**: teks bebas diteruskan ke Director, sedangkan tombol approval dan perintah ditangani Studio secara deterministik (ADR-0005). Contoh: "hook-nya bikin lebih misterius".
 - **FR-TG-09 (P0)** Hanya ada **satu** bot Telegram, dan hanya proses Studio yang melakukan polling. Hermes tidak diberi token bot.

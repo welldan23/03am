@@ -387,7 +387,15 @@ class WorkflowService:
             self._enqueue_stage(updated, extra={"editorial_override": True})
         return updated
 
-    def retry(self, episode_id: str, actor: Actor) -> Episode:
+    def retry(
+        self,
+        episode_id: str,
+        actor: Actor,
+        *,
+        notes: str | None = None,
+        expected_version: int | None = None,
+    ) -> Episode:
+        """Ulang tahap yang gagal. `notes` (misalnya catatan revisi naskah) ikut ke job tahap."""
         self._owners.require_owner(actor, "mengulang tahap yang gagal")
         with self._db.transaction():
             episode = self._episodes.get(episode_id)
@@ -398,9 +406,10 @@ class WorkflowService:
                 trigger=Trigger.RETRY,
                 target=episode.failed_from,
                 actor=actor,
-                expected_version=episode.version,
+                expected_version=episode.version if expected_version is None else expected_version,
+                reason=notes,
             )
-            self._enqueue_stage(updated)
+            self._enqueue_stage(updated, notes=notes)
         return updated
 
     # --- job ---------------------------------------------------------------

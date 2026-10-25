@@ -20,8 +20,8 @@
 |---|---|---|---|
 | 0 | Fondasi | Tooling, CI, `shared/` | ✅ selesai (bersama Fase 1) |
 | 1 | Inti domain | State machine, approval, budget, ledger, job queue, audit, CLI | ✅ selesai + audit teknis ([laporan](reviews/phase-1-audit.md)), disetujui owner |
-| 2 | Research & script engine (mock LLM) | Discovery → research → fact check → naskah 3 format → editorial gate | ✅ selesai ([laporan](reviews/phase-2-implementation.md)) — **menunggu persetujuan owner** |
-| 3 | Telegram Studio Bot (1 bot) | Approval G0–G3 lewat tombol, status, budget | Belum |
+| 2 | Research & script engine (mock LLM) | Discovery → research → fact check → naskah 3 format → editorial gate | ✅ selesai ([laporan](reviews/phase-2-implementation.md)), disetujui owner |
+| 3 | Telegram Studio Bot (1 bot) | Approval G0–G3 lewat tombol, percakapan, notifikasi, budget | ✅ selesai ([laporan](reviews/phase-3-implementation.md)) — **menunggu persetujuan owner** |
 | 4 | Aset, TTS, render, ekspor (mock) | MP4 utuh dari aset mock + paket ekspor + benchmark render | Belum |
 | 5 | Hermes AI Director | Spike → gateway metering → MCP server → Director di bot yang sama | Belum |
 | 6 | Adapter provider asli (default mati) | Adapter OpenAI, Higgsfield, TTS + contract test | Belum |
@@ -145,21 +145,37 @@ MVP = Fase 0–5 selesai: satu episode bisa dibuat lengkap lewat Telegram dengan
 
 ## Fase 3 — Telegram Studio Bot (satu bot)
 
-**Pekerjaan**
-- `interfaces/telegram` (aiogram 3): auth allowlist, perintah, kartu approval + tombol (token sekali pakai), form revisi, notifikasi.
-- Router update deterministik: callback → approvals, perintah → service, teks bebas → `DirectorPort` (sementara `MockDirector`).
-- Startup memastikan hanya ada satu poller untuk token tersebut (lock file / cek `getWebhookInfo`).
+**Pekerjaan** (selesai — detail di [laporan implementasi](reviews/phase-3-implementation.md), panduan di [TELEGRAM_SETUP.md](TELEGRAM_SETUP.md))
+- `modules/controller`: `StudioController` (fasad untuk antarmuka percakapan, cek owner di setiap metode), `ActionCodes` (kode tombol sekali pakai), `ConversationStore`, `UpdateLog` — [ADR-0012](adr/0012-antarmuka-telegram-dan-outbox.md).
+- `modules/notifications`: outbox persisten, diisi trigger DB (migrasi `0005`).
+- `interfaces/telegram` (aiogram 3.31): adapter, `StudioBot` (gerbang keamanan), `ConversationEngine`, `RuleBasedIntentParser` (port `IntentParser` untuk Hermes nanti), render + pagination, transport dengan retry, dispatcher notifikasi, runner long polling + worker thread + kunci poller tunggal.
+- Revisi naskah lewat workflow (REVISE di G1 atau RETRY dengan catatan) → approval digantikan, versi naik, editorial gate ulang.
+- CLI: `studio bot check`, `studio bot run`, `studio worker run --loop`.
+- `DirectorPort`/Hermes **tidak** dibuat (Fase 5).
 
-**Acceptance Criteria**
-- [ ] AC3.1 Pesan dari user di luar allowlist diabaikan dan tercatat di log.
-- [ ] AC3.2 Kartu G0 menampilkan kandidat topik + batas biaya pra-produksi; memilih satu menjalankan riset.
-- [ ] AC3.3 Kartu G1 menampilkan ringkasan naskah, jumlah shot, dan ringkasan cek fakta; dokumen lengkap dilampirkan.
-- [ ] AC3.4 Kartu G2 menampilkan estimasi per kategori, total Rupiah, kurs, sisa anggaran per kategori, dan batas maksimum.
-- [ ] AC3.5 Tombol lama (konten berubah / token terpakai) membalas "kedaluwarsa" tanpa efek.
-- [ ] AC3.6 Klik ganda hanya diproses sekali.
-- [ ] AC3.7 Callback tombol tidak pernah diteruskan ke Director (test router).
-- [ ] AC3.8 `/budget` menampilkan pemakaian bulan ini: simulasi vs nyata, Studio vs Hermes.
-- [ ] AC3.9 Bot tetap responsif saat worker menjalankan job panjang.
+**Acceptance Criteria** (bukti = nama test di `tests/telegram/`)
+- [x] AC3.1 Pesan dari user di luar allowlist tidak mendapat data apa pun dan tercatat di audit log (`telegram.unauthorized`, dibatasi). — `test_stranger_gets_nothing_and_is_audited`, `test_stranger_cannot_press_owner_buttons`
+- [x] AC3.2 Kartu G0 menampilkan kandidat topik + batas biaya pra-produksi; memilih satu menjalankan riset. — `test_create_documentary_with_buttons`, `test_full_flow_to_g1_with_notifications`
+- [x] AC3.3 *(dipertegas)* Kartu G1 menampilkan ringkasan naskah, durasi, status editorial gate, dan jumlah catatan; detail naskah & riset lewat tombol. Jumlah shot & lampiran dokumen → Fase 4 (storyboard masih placeholder). — `test_full_flow_to_g1_with_notifications`, `test_research_and_script_review_with_pagination`
+- [x] AC3.4 Detail G2 menampilkan estimasi per kategori, total Rupiah, kurs, sisa anggaran per kategori, dan batas maksimum (label simulasi). — `test_g2_detail_shows_estimate_per_category_fx_and_remaining`
+- [x] AC3.5 Tombol lama (konten berubah / kode terpakai / kedaluwarsa) ditolak tanpa efek. — `test_old_card_is_refused_after_content_is_revised`, `test_card_button_replay_is_refused`, `test_action_code_expires_after_ttl`
+- [x] AC3.6 Klik ganda (termasuk dari banyak koneksi bersamaan) hanya diproses sekali. — `test_concurrent_double_click_executes_once`, `test_duplicate_telegram_update_is_processed_once`
+- [x] AC3.7 Callback tombol tidak pernah diteruskan ke pemahaman teks (calon Director). — `test_callbacks_never_reach_the_text_intent_parser`, `test_decisions_are_never_taken_from_free_text`
+- [x] AC3.8 `/budget` menampilkan pemakaian bulan ini: simulasi vs nyata, per sumber, kurs dari config. — `test_budget_dashboard_shows_plan_from_config`, `test_exchange_rate_comes_from_config_not_code`
+- [x] AC3.9 Bot tetap responsif saat worker menjalankan job panjang. — `test_bot_stays_responsive_while_worker_runs_a_long_job`
+
+*Tambahan dari brief Fase 3*
+- [x] AC3.10 Hanya chat pribadi; identitas dari user ID numerik, bukan username. — `test_group_chats_are_ignored`, `test_identity_is_numeric_user_id_from_allowlist`
+- [x] AC3.11 Controller menolak baca/tulis dari non-owner (termasuk Director), bukan hanya bot. — `test_controller_refuses_non_owner_reads_and_writes`
+- [x] AC3.12 `callback_data` ≤ 64 byte, tanpa token/rahasia; kode terikat ke owner penerima; callback palsu ditolak. — `test_every_button_fits_callback_limit_and_carries_no_secrets`, `test_action_codes_are_bound_to_the_owner_who_received_them`, `test_forged_callbacks_are_refused`
+- [x] AC3.13 Approval kedaluwarsa ditolak dan bot menawarkan terbit ulang. — `test_expired_approval_offers_reissue`
+- [x] AC3.14 Revisi naskah lewat workflow resmi (approval digantikan, versi naik, editorial gate ulang). — `test_request_revision_via_buttons`, `test_old_card_is_refused_after_content_is_revised`, `test_failed_script_revision_goes_through_retry`
+- [x] AC3.15 Percakapan natural (9 contoh brief) dikenali; maksud ambigu → bot bertanya. — `test_brief_examples_are_routed`, `test_ambiguity_asks_instead_of_guessing`, `test_episode_is_not_guessed_when_several_exist`
+- [x] AC3.16 Notifikasi lewat outbox persisten: transaksional, selamat dari restart, tidak dobel ke penerima yang sama, retry/backoff, `retry_after` dihormati. — `tests/telegram/test_notifications.py`
+- [x] AC3.17 Error Telegram (rate limit, timeout, jaringan, diblokir, pesan tak bisa diedit), SQLite busy, pesan > 4096 karakter, dan error internal ditangani tanpa traceback. — `tests/telegram/test_reliability.py`
+- [x] AC3.18 Hanya satu poller per folder data; worker berhenti dengan rapi. — `test_only_one_poller_per_data_dir`, `test_worker_thread_stops_gracefully`
+- [x] AC3.19 Token bot tidak muncul di repr, log structlog, maupun log standar (aiogram). — `test_bot_token_never_appears_in_logs_or_repr`
+- [x] AC3.20 Semua test offline dengan fake transport; regresi Fase 1–2 tetap lulus. — seluruh `tests/`
 
 ---
 
@@ -172,6 +188,7 @@ MVP = Fase 0–5 selesai: satu episode bisa dibuat lengkap lewat Telegram dengan
 - Skrip benchmark render (`scripts/bench_render.py`) + `docs/benchmarks/`.
 
 **Acceptance Criteria**
+- [ ] AC3.3b (dipindah dari Fase 3) Kartu G1 menampilkan jumlah shot storyboard; dokumen naskah/storyboard/laporan fakta dilampirkan sebagai file.
 - [ ] AC2.6 (dipindah dari Fase 2) Total durasi storyboard = durasi narasi ± 1 detik; durasi `ai_video` di-snap ke nilai yang didukung.
 - [ ] AC4.1 Episode mock 30 detik dan 180 detik ter-render menjadi MP4 1080×1920, 30 fps, H.264/AAC (dicek `ffprobe`).
 - [ ] AC4.2 Durasi video = durasi voice ± 0,5 detik.

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Draft v0.3 — eksekusi job dua fase, research & script engine (Fase 2) |
+| Status | Draft v0.4 — bot Telegram, Studio Controller, outbox notifikasi (Fase 3) |
 | Gaya | Modular monolith, ports & adapters (hexagonal) |
 | Dokumen terkait | [PRD.md](PRD.md) · [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) · [RISKS.md](RISKS.md) · [ADR](adr/README.md) |
 
@@ -25,15 +25,16 @@
                                      │  hanya Studio yang polling (ADR-0005)
 ┌────────────────────────────────────┼──────────── 03:AM Studio (Python) ─────────────────┐
 │                                    ▼                                                    │
-│   interfaces/telegram ── callback tombol ──▶ approvals (deterministik, tanpa LLM)       │
-│          │            ── perintah /status /budget ──▶ application services              │
-│          └─ teks bebas ──▶ DirectorPort ──▶ adapter Hermes (headless) ──┐               │
+│   interfaces/telegram ── callback tombol ──▶ StudioController (kode sekali pakai)      │
+│          │            ── perintah /status /budget ──▶ StudioController                  │
+│          └─ teks bebas ──▶ IntentParser (Fase 3: aturan; Fase 5: Hermes) ──┐            │
 │                                                                         │               │
 │   interfaces/cli ──▶ application services                               ▼               │
 │   interfaces/mcp ◀── MCP stdio (tool allowlist, tanpa approval) ── Hermes Agent         │
 │          │                                                       (tanpa token bot,      │
 │          ▼                                                        tanpa API key)        │
-│   modules/*: workflow · episodes · approvals · budget · artifacts · audit · …           │
+│   modules/controller ──▶ workflow · episodes · approvals · budget · artifacts · …       │
+│   notification_outbox (trigger DB) ──▶ dispatcher ──▶ Telegram                          │
 │          │                                                              │ LLM request   │
 │          ▼                                                              ▼               │
 │   providers (port) ──▶ mock (default) │ asli (mati)      llm-gateway (metering, ADR-0009)│
@@ -99,6 +100,8 @@ Yang bertanda ✅ sudah ada (Fase 1–2). Sisanya rencana.
 │   │   ├── research/            # discovery, riset, sumber, fact checker   ✅
 │   │   ├── scripting/           # naskah 3 format, timing, editorial gate  ✅
 │   │   ├── workflow/            # orkestrator, ContentStages, placeholder  ✅
+│   │   ├── controller/          # StudioController, kode tombol, state chat ✅
+│   │   ├── notifications/       # outbox notifikasi (diisi trigger DB)     ✅
 │   │   ├── storyboard · assets · voice · render · export                  (Fase 4)
 │   ├── prompts/                 # template prompt per task (.md)           ✅
 │   ├── providers/
@@ -108,7 +111,7 @@ Yang bertanda ✅ sudah ada (Fase 1–2). Sisanya rencana.
 │   ├── director/   DirectorPort + MockDirector                            (Fase 5)
 │   └── interfaces/
 │       ├── cli/                                                           ✅
-│       ├── telegram/                                                      (Fase 3)
+│       ├── telegram/            # aiogram adapter, engine, intent, render  ✅
 │       └── mcp/ · llm_gateway/                                            (Fase 5)
 └── tests/  unit/ · integration/                                           ✅
            contract/ · e2e/                                                (Fase 4+)
@@ -127,8 +130,9 @@ modules/approvals/
 ### 4.2 Aturan dependensi (ditegakkan `import-linter`)
 
 ```
-interfaces ─▶ bootstrap ─▶ workflow ─▶ scripting ─▶ research ─▶ calls
-           ─▶ {episodes | approvals | budget | artifacts} ─▶ audit ─▶ {infra | providers} ─▶ shared
+interfaces ─▶ bootstrap ─▶ controller ─▶ workflow ─▶ scripting ─▶ research ─▶ calls
+           ─▶ {episodes | approvals | budget | artifacts | notifications} ─▶ audit
+           ─▶ {infra | providers} ─▶ shared
 ```
 
 - Lapisan atas boleh memakai lapisan bawah, tidak sebaliknya.
@@ -137,6 +141,7 @@ interfaces ─▶ bootstrap ─▶ workflow ─▶ scripting ─▶ research ─
 - Adapter konkret hanya dirakit di `bootstrap.py`. Kontrak `forbidden` melarang `modules`/`interfaces` meng-import `studio.providers.*.mock`.
 - Provider hanya dipanggil lewat `modules.calls.MeteredCaller` (reserve → panggil dengan tiket → commit). `App` tidak mengekspos provider mentah.
 - `interfaces/mcp` (Fase 5) tidak boleh membuka aksi approve/reject/budget/ekspor.
+- `interfaces/telegram` hanya memanggil `StudioController`; tidak ada akses langsung ke modul domain.
 
 ## 5. Interface: Telegram & Hermes
 
@@ -146,9 +151,26 @@ Keputusan: **satu bot Telegram milik Studio** ([ADR-0005](adr/0005-satu-bot-tele
 
 - Hanya proses Studio yang polling token bot. Gateway Telegram Hermes **tidak diaktifkan**, jadi konflik polling (409) tidak mungkin terjadi.
 - Update Telegram dibagi deterministik:
-  - **callback tombol** → `approvals` (tidak pernah ke LLM);
-  - **perintah** → service Studio;
-  - **teks bebas** → `DirectorPort` → Hermes headless.
+  - **callback tombol** → `StudioController` → `approvals`/`workflow` (tidak pernah ke LLM);
+  - **perintah** → `StudioController`;
+  - **teks bebas** → `IntentParser` → `StudioController`. Fase 3 memakai parser berbasis aturan; Fase 5 parser ini bisa digantikan/dilengkapi Hermes headless (`DirectorPort`).
+
+### 5.1a Implementasi Fase 3 ([ADR-0012](adr/0012-antarmuka-telegram-dan-outbox.md), panduan: [TELEGRAM_SETUP.md](TELEGRAM_SETUP.md))
+
+```
+Telegram ─▶ aiogram (long polling) ─▶ adapter (Update → Inbound)
+        ─▶ StudioBot: chat pribadi? → owner allowlist (from_user.id)? → dedupe update_id
+        ─▶ CoreRunner (1 thread untuk semua akses DB bot)
+        ─▶ ConversationEngine (sinkron; state di ui_conversations)
+              ├─ teks  ─▶ IntentParser (aturan) ─▶ StudioController
+              └─ tombol ─▶ callbacks (≤ 64 byte) ─▶ StudioController.press(kode sekali pakai)
+        ─▶ Reply (send/edit/answer) ─▶ Transport (aiogram, retry/rate limit) ─▶ Telegram
+worker (thread/proses lain, koneksi DB sendiri) ─▶ trigger DB ─▶ notification_outbox
+        ─▶ NotificationDispatcher (di luar transaksi, delivered_to per penerima) ─▶ Telegram
+```
+
+- **Keamanan:** hanya chat pribadi; identitas dari user ID numerik di `STUDIO_OWNER_IDS` (`telegram:<id>`); non-owner tidak mendapat data apa pun dan dicatat (`telegram.unauthorized`, dibatasi); controller memeriksa owner lagi di setiap metode; kode tombol sekali pakai, terikat actor, kedaluwarsa, hangus per kartu; keputusan approval tidak pernah dari teks bebas; token bot `SecretStr` + filter sensor log.
+- **Reliability:** `retry_after` dihormati (singkat ditunggu, panjang dijadwalkan ulang di outbox); timeout/jaringan → backoff; diblokir user → gagal permanen; "message is not modified" diabaikan; pesan > 4096 karakter dipecah per baris (tombol di potongan terakhir); SQLite busy → coba ulang 3×, lalu pesan ramah; error tak terduga → pesan umum tanpa traceback; satu poller per folder data (kunci file); shutdown rapi lewat sinyal.
 - Hermes memanggil Studio lewat **MCP stdio** dengan allowlist tool.
 - Hermes tidak memegang API key OpenAI. LLM Hermes lewat **gateway metering** Studio ([ADR-0009](adr/0009-metering-token-llm.md)).
 - Rencana cadangan (kalau mode headless Hermes tidak layak): dua bot dengan token berbeda. Syarat keamanan dan metering tetap sama.
@@ -275,6 +297,10 @@ panggilan provider ─▶ sukses: COMMITTED (biaya aktual; tandai overrun bila >
 | `ledger_entries` | budget | reservasi/realisasi, kurs, mode, sumber, tujuan |
 | `jobs` | infra/jobs | antrean dengan lease + fencing token (`lease_token`) |
 | `provider_calls` | calls | satu baris per panggilan provider: key idempotensi, status, attempt, estimasi token/biaya, otorisasi, ledger, respons, biaya aktual (Fase 2, migrasi `0004`) |
+| `ui_processed_updates` | controller | update chat yang sudah diproses (dedupe; Fase 3, migrasi `0005`) |
+| `ui_action_codes` | controller | hash kode tombol sekali pakai: actor, aksi, payload (ID saja), kedaluwarsa, dipakai |
+| `ui_conversations` | controller | state percakapan per chat (alur buat dokumenter, catatan revisi, episode aktif) |
+| `notification_outbox` | notifications | notifikasi persisten; diisi trigger dari `audit_log` & `jobs` di transaksi kejadiannya |
 
 Fase 2 juga menambah kolom `episodes.format` (`quick_files`/`archives`/`deep_files`). Sumber, bukti, dan klaim disimpan sebagai **artefak berversi** (`research`, `factcheck`, `script`, `editorial_report`), bukan tabel sendiri, supaya ikut terikat `subject_hash` approval. Tabel lain (`shots`, `assets`, …) ditambah lewat migrasi baru oleh modul pemiliknya.
 
@@ -411,3 +437,4 @@ data/                       (tidak masuk git)
 | [ADR-0009](adr/0009-metering-token-llm.md) | Semua token LLM lewat gateway metering | **Diterima** |
 | [ADR-0010](adr/0010-rencana-anggaran-dan-otorisasi.md) | Rencana anggaran, kurs, otorisasi belanja | **Diterima** |
 | [ADR-0011](adr/0011-eksekusi-job-dua-fase.md) | Eksekusi job dua fase + `provider_calls` | **Diterima** |
+| [ADR-0012](adr/0012-antarmuka-telegram-dan-outbox.md) | Studio Controller, kode tombol sekali pakai, outbox notifikasi | **Diterima** |

@@ -13,5 +13,6 @@
 | [0009](0009-metering-token-llm.md) | Semua token LLM (termasuk Hermes) lewat gateway metering Studio | **Diterima** |
 | [0010](0010-rencana-anggaran-dan-otorisasi.md) | Rencana anggaran bulanan, kurs, dan otorisasi belanja | **Diterima** |
 | [0011](0011-eksekusi-job-dua-fase.md) | Eksekusi job dua fase & catatan panggilan provider (`provider_calls`) | **Diterima** |
+| [0012](0012-antarmuka-telegram-dan-outbox.md) | Antarmuka Telegram: Studio Controller, kode tombol sekali pakai, outbox notifikasi | **Diterima** |
 
 ADR yang masih berupa ringkasan akan ditulis lengkap kalau keputusannya perlu dibahas ulang.
