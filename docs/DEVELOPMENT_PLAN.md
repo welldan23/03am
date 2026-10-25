@@ -42,7 +42,7 @@ MVP = Fase 0–5 selesai: satu episode bisa dibuat lengkap lewat Telegram dengan
 **Acceptance Criteria**
 - [x] AC0.1 `uv sync` lalu `uv run pytest` lulus (Python 3.12 dan 3.13).
 - [x] AC0.2 `ruff check`, `ruff format --check`, `mypy src`, dan `lint-imports` semua lulus.
-- [ ] AC0.3 CI hijau di GitHub untuk commit terakhir (workflow sudah dibuat, menunggu run pertama).
+- [x] AC0.3 CI hijau di GitHub (Python 3.12 & 3.13, run pertama 2b7469b).
 - [x] AC0.4 Test yang mencoba akses jaringan otomatis gagal (ada test negatif).
 - [x] AC0.5 Logger tidak pernah mencetak nilai dengan nama kunci mengandung `token`, `key`, `secret`, `password` (ada test).
 - [x] AC0.6 `python -m studio --help` jalan.
