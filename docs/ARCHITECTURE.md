@@ -250,7 +250,7 @@ panggilan provider ─▶ sukses: COMMITTED (biaya aktual; tandai overrun bila >
 
 - Rupiah = `int`, USD = `int` mikro-dolar, kurs = `Decimal`; USD→IDR dibulatkan ke atas.
 - Mode `simulated` (mock) dan `real` dihitung terpisah dengan aturan yang sama.
-- Ledger mencatat `source` (`studio`/`hermes`) dan `purpose` (`conversation`, `tool_call`, `retry`, `internal`, `research`, …).
+- Ledger mencatat `source` (`studio`/`hermes`) dan `purpose` (Hermes: `conversation`, `tool_call`, `retry`, `background`; Studio: `research`, `script`, …).
 - Approve G2 ditolak kalau batas produksi melebihi sisa alokasi kategori yang relevan.
 
 ### 6.5 Tabel (Fase 1)
@@ -265,15 +265,17 @@ panggilan provider ─▶ sukses: COMMITTED (biaya aktual; tandai overrun bila >
 | `budget_periods` | budget | snapshot rencana per bulan |
 | `spend_authorizations` | budget | jenis, batas, status, approval asal |
 | `ledger_entries` | budget | reservasi/realisasi, kurs, mode, sumber, tujuan |
-| `jobs` | infra/jobs | antrean dengan lease |
+| `jobs` | infra/jobs | antrean dengan lease + fencing token (`lease_token`) |
 
 Tabel Fase berikut (`sources`, `claims`, `shots`, `assets`, `provider_calls`, …) ditambah lewat migrasi baru oleh modul pemiliknya.
 
 ## 7. Pipeline & Job
 
-- `jobs(id, type, episode_id, payload, status, attempts, max_attempts, run_after, lease_owner, lease_until, idempotency_key UNIQUE, last_error)`.
+- `jobs(id, type, episode_id, payload, status, attempts, max_attempts, run_after, lease_owner, lease_until, lease_token, idempotency_key UNIQUE, last_error)`.
 - Worker mengambil job dengan **lease**. Job `running` yang lease-nya habis (worker crash) diambil ulang.
-- Handler + pencatatan sukses berjalan dalam **satu transaksi**. Crash di tengah = rollback, aman diulang. Sebelum commit, worker memastikan lease masih miliknya.
+- Setiap klaim menaikkan **fencing token** `lease_token`. `complete`/`fail` adalah satu `UPDATE` bersyarat: `status='running' AND lease_owner=? AND lease_token=? AND lease_until > now`. Worker yang lease-nya kedaluwarsa, diambil worker lain, atau di-restart dengan ID sama tidak bisa menyelesaikan job (`LeaseLostError`).
+- Handler + pencatatan sukses berjalan dalam **satu transaksi**. Crash di tengah atau lease hilang = rollback, aman diulang tepat sekali.
+- **Batasan yang disadari:** handler berjalan di dalam transaksi `BEGIN IMMEDIATE`, jadi selama handler jalan, penulis lain menunggu. Ini aman untuk handler placeholder Fase 1 yang cepat, tapi **tidak boleh** dipakai untuk panggilan jaringan (LLM/provider). Fase 2 wajib memisahkan: reservasi + catat request (commit) → panggil provider di luar transaksi → selesaikan job (commit). Lihat `docs/reviews/phase-1-audit.md` (TD-01).
 - Payload job stage membawa `expected_status` + `expected_version`. Kalau episode sudah berubah (revisi/batal), job ditandai `obsolete` tanpa efek.
 - Error biasa → retry dengan backoff eksponensial sampai `max_attempts`, lalu episode `FAILED`. Error non-retryable (misalnya budget habis) → langsung `FAILED`.
 - Fase 1 memakai **handler placeholder** yang membuat artefak contoh dan mencatat biaya simulasi. Handler asli menggantikannya di Fase 2 & 4.
@@ -344,6 +346,13 @@ data/                       (tidak masuk git)
 - Konten riset dari web = data tak tepercaya (dibungkus delimiter, tidak dieksekusi).
 - Hermes: tanpa token bot, tanpa API key, toolset berbahaya dimatikan, allowlist tool MCP.
 - Audit log append-only di level database (trigger).
+- **Invarian keamanan di level database** (migrasi `0003_security_invariants.sql`), sebagai lapisan kedua di bawah pemeriksaan aplikasi:
+  - episode tidak bisa keluar dari gate (kecuali dibatalkan) tanpa keputusan owner yang tercatat untuk gate & versi episode yang sama, dan jenis keputusannya harus cocok dengan arah transisi;
+  - otorisasi belanja episode hanya bisa dibuat dari approval G0/G2 yang `approved`, batasnya ≤ batas di approval, tidak bisa dinaikkan, dan tidak bisa dihidupkan lagi setelah dicabut;
+  - otorisasi operasional butuh periode anggaran aktif;
+  - nilai uang di ledger wajib integer; entri ledger yang sudah selesai tidak bisa diubah atau dihapus.
+- CLI hanya bisa bertindak sebagai owner `cli:<nama>` (tidak bisa menyamar `telegram:<id>`) dan tetap harus ada di `STUDIO_OWNER_IDS`. Batas keamanan CLI = akses shell ke server.
+- Hermes (`source=hermes`) hanya boleh belanja kategori `openai`, dari otorisasi operasional, dengan purpose `conversation`/`tool_call`/`retry`/`background`.
 
 ## 13. Keputusan Arsitektur
 

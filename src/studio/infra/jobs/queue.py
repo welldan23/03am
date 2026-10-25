@@ -2,7 +2,9 @@
 
 - `claim` mengambil job `queued` yang sudah waktunya, atau job `running` yang lease-nya
   habis (worker sebelumnya crash). `attempts` naik setiap kali diklaim.
-- `complete`/`fail` hanya berhasil kalau lease masih dipegang worker yang sama.
+- `complete`/`fail` hanya berhasil kalau lease masih dipegang worker yang sama, dengan
+  fencing token (`lease_token`) yang sama, dan lease belum kedaluwarsa. Pengecekan dan
+  perubahan dilakukan dalam satu UPDATE bersyarat sehingga tidak ada celah check-then-act.
 """
 
 from __future__ import annotations
@@ -45,6 +47,7 @@ class Job:
     run_after: datetime
     lease_owner: str | None
     lease_until: datetime | None
+    lease_token: int
     idempotency_key: str
     last_error: str | None
 
@@ -61,6 +64,7 @@ class Job:
             run_after=from_iso(row["run_after"]),
             lease_owner=row["lease_owner"],
             lease_until=from_iso(row["lease_until"]) if row["lease_until"] else None,
+            lease_token=row["lease_token"],
             idempotency_key=row["idempotency_key"],
             last_error=row["last_error"],
         )
@@ -141,14 +145,15 @@ class JobQueue:
         now = to_iso(self._clock.now())
         with self._db.transaction():
             rows = self._db.query_all(
-                "SELECT * FROM jobs WHERE status = 'running' AND lease_until < ?"
+                "SELECT id FROM jobs WHERE status = 'running' AND lease_until <= ?"
                 " AND attempts >= max_attempts",
                 (now,),
             )
             for row in rows:
                 self._db.execute(
                     "UPDATE jobs SET status = 'failed', lease_owner = NULL, lease_until = NULL,"
-                    " last_error = ?, updated_at = ? WHERE id = ?",
+                    " lease_token = lease_token + 1, last_error = ?, updated_at = ?"
+                    " WHERE id = ? AND status = 'running'",
                     (
                         "lease habis setelah jatah attempt habis (worker crash berulang)",
                         now,
@@ -158,61 +163,106 @@ class JobQueue:
         return [self.get(row["id"]) for row in rows]
 
     def claim(self, worker_id: str, lease_seconds: int) -> Job | None:
+        """Ambil satu job yang siap. Setiap klaim menaikkan `lease_token` (fencing)."""
+        if lease_seconds <= 0:
+            raise ValueError("lease_seconds harus positif")
         now_dt = self._clock.now()
         now = to_iso(now_dt)
         with self._db.transaction():
             row = self._db.query_one(
                 "SELECT id FROM jobs"
                 " WHERE (status = 'queued' AND run_after <= ?)"
-                "    OR (status = 'running' AND lease_until < ? AND attempts < max_attempts)"
-                " ORDER BY run_after, created_at LIMIT 1",
+                "    OR (status = 'running' AND lease_until <= ? AND attempts < max_attempts)"
+                " ORDER BY run_after, created_at, id LIMIT 1",
                 (now, now),
             )
             if row is None:
                 return None
-            self._db.execute(
+            cursor = self._db.execute(
                 "UPDATE jobs SET status = 'running', attempts = attempts + 1, lease_owner = ?,"
-                " lease_until = ?, updated_at = ? WHERE id = ?",
-                (worker_id, to_iso(now_dt + timedelta(seconds=lease_seconds)), now, row["id"]),
+                " lease_until = ?, lease_token = lease_token + 1, updated_at = ?"
+                " WHERE id = ? AND ((status = 'queued' AND run_after <= ?)"
+                "   OR (status = 'running' AND lease_until <= ? AND attempts < max_attempts))",
+                (
+                    worker_id,
+                    to_iso(now_dt + timedelta(seconds=lease_seconds)),
+                    now,
+                    row["id"],
+                    now,
+                    now,
+                ),
             )
+            if cursor.rowcount != 1:  # pragma: no cover - dijaga BEGIN IMMEDIATE
+                return None
             return self.get(row["id"])
 
-    def _assert_lease(self, job_id: str, worker_id: str) -> Job:
+    def _lease_lost(self, job_id: str, worker_id: str, lease_token: int) -> LeaseLostError:
         job = self.get(job_id)
-        if job.status is not JobStatus.RUNNING or job.lease_owner != worker_id:
-            raise LeaseLostError(f"job {job_id} tidak lagi dipegang {worker_id}")
-        return job
+        if job.status is not JobStatus.RUNNING:
+            reason = f"job sudah berstatus {job.status.value}"
+        elif job.lease_token != lease_token or job.lease_owner != worker_id:
+            reason = f"lease sudah diambil {job.lease_owner} (token {job.lease_token})"
+        else:
+            reason = "lease sudah kedaluwarsa"
+        return LeaseLostError(f"job {job_id} tidak lagi dipegang {worker_id}: {reason}")
 
-    def complete(self, job_id: str, worker_id: str, status: JobStatus = JobStatus.SUCCEEDED) -> Job:
+    def complete(
+        self,
+        job_id: str,
+        worker_id: str,
+        lease_token: int,
+        status: JobStatus = JobStatus.SUCCEEDED,
+    ) -> Job:
         if status not in (JobStatus.SUCCEEDED, JobStatus.OBSOLETE):
             raise ValueError("complete hanya untuk succeeded/obsolete")
+        now = to_iso(self._clock.now())
         with self._db.transaction():
-            self._assert_lease(job_id, worker_id)
-            self._db.execute(
+            cursor = self._db.execute(
                 "UPDATE jobs SET status = ?, lease_owner = NULL, lease_until = NULL,"
-                " last_error = NULL, updated_at = ? WHERE id = ?",
-                (status.value, to_iso(self._clock.now()), job_id),
+                " last_error = NULL, updated_at = ?"
+                " WHERE id = ? AND status = 'running' AND lease_owner = ?"
+                " AND lease_token = ? AND lease_until > ?",
+                (status.value, now, job_id, worker_id, lease_token, now),
             )
+            if cursor.rowcount != 1:
+                raise self._lease_lost(job_id, worker_id, lease_token)
             return self.get(job_id)
 
-    def fail(self, job_id: str, worker_id: str, error: str, *, retryable: bool) -> Job:
+    def fail(
+        self, job_id: str, worker_id: str, lease_token: int, error: str, *, retryable: bool
+    ) -> Job:
         """Catat kegagalan: antre ulang dengan backoff, atau `failed` kalau tidak bisa diulang."""
+        now_dt = self._clock.now()
+        now = to_iso(now_dt)
         with self._db.transaction():
-            job = self._assert_lease(job_id, worker_id)
-            now_dt = self._clock.now()
+            job = self.get(job_id)
             if retryable and job.attempts < job.max_attempts:
                 delay = self._backoff_base * (2 ** (job.attempts - 1))
-                self._db.execute(
+                cursor = self._db.execute(
                     "UPDATE jobs SET status = 'queued', lease_owner = NULL, lease_until = NULL,"
-                    " run_after = ?, last_error = ?, updated_at = ? WHERE id = ?",
-                    (to_iso(now_dt + timedelta(seconds=delay)), error, to_iso(now_dt), job_id),
+                    " run_after = ?, last_error = ?, updated_at = ?"
+                    " WHERE id = ? AND status = 'running' AND lease_owner = ?"
+                    " AND lease_token = ? AND lease_until > ?",
+                    (
+                        to_iso(now_dt + timedelta(seconds=delay)),
+                        error,
+                        now,
+                        job_id,
+                        worker_id,
+                        lease_token,
+                        now,
+                    ),
                 )
             else:
-                self._db.execute(
+                cursor = self._db.execute(
                     "UPDATE jobs SET status = 'failed', lease_owner = NULL, lease_until = NULL,"
-                    " last_error = ?, updated_at = ? WHERE id = ?",
-                    (error, to_iso(now_dt), job_id),
+                    " last_error = ?, updated_at = ?"
+                    " WHERE id = ? AND status = 'running' AND lease_owner = ?"
+                    " AND lease_token = ? AND lease_until > ?",
+                    (error, now, job_id, worker_id, lease_token, now),
                 )
+            if cursor.rowcount != 1:
+                raise self._lease_lost(job_id, worker_id, lease_token)
             return self.get(job_id)
 
     def cancel_for_episode(self, episode_id: str) -> int:

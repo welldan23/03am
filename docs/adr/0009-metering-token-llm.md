@@ -20,7 +20,7 @@
    3. Reservasi ditolak → gateway membalas error terstruktur (`budget_exceeded`) tanpa meneruskan request ke OpenAI.
    4. Request diteruskan → biaya aktual dari field `usage` respons di-*commit*. Untuk streaming, `include_usage` diwajibkan.
    5. Hasil tidak jelas (timeout setelah request terkirim) → commit sebesar reservasi (konservatif), karena provider mungkin tetap menagih.
-3. `purpose` dicatat per panggilan: `conversation`, `tool_call`, `retry`, `internal` (memori/ringkasan). Retry selalu dihitung sebagai panggilan terpisah.
+3. `purpose` dicatat per panggilan: `conversation`, `tool_call`, `retry`, `background` (memori, ringkasan, skill, cron — semua kerja di luar giliran percakapan). Retry selalu dihitung sebagai panggilan terpisah.
 4. Panggilan LLM milik Studio sendiri (riset, naskah, …) memakai `BudgetGuard` yang sama dengan `source="studio"`.
 5. Batas project di dashboard OpenAI tetap dipasang sebagai pengaman kedua, sedikit di atas alokasi.
 
@@ -28,7 +28,8 @@
 
 - Ledger mencatat `source` (`studio`/`hermes`) dan `purpose`.
 - Helper harga LLM per tier (`fast`/`smart`) per 1 juta token, dengan pembulatan ke atas.
-- Test: percakapan, tool call, dan retry Hermes masing-masing tercatat dan dipotong dari alokasi `openai` yang sama dengan pemakaian Studio.
+- Test: keempat purpose Hermes (`conversation`, `tool_call`, `retry`, `background`) masing-masing tercatat dan memotong alokasi `openai` yang sama dengan Studio.
+- Guard menolak belanja Hermes yang bukan kategori `openai`, yang memakai otorisasi selain operasional, atau yang purpose-nya tidak dikenal (ditambahkan saat audit Fase 1).
 
 ## Konsekuensi
 

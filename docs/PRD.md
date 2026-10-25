@@ -155,7 +155,7 @@ Prioritas: **P0** = wajib MVP, **P1** = penting setelah MVP, **P2** = nanti.
 - **FR-CO-05 (P0)** Kill switch global: `PAID_PROVIDERS_ENABLED=false` (default).
 - **FR-CO-06 (P0)** Mock provider tetap mengeluarkan "biaya simulasi" (dicatat terpisah dari biaya nyata) supaya alur biaya teruji tanpa uang sungguhan.
 - **FR-CO-07 (P1)** Laporan biaya bulanan: per episode, per kategori, per sumber (`studio`/`hermes`).
-- **FR-CO-08 (P0)** **Seluruh** konsumsi OpenAI dihitung, termasuk Hermes: percakapan, setiap putaran tool call, retry, dan proses internal (ringkasan/memori). Hermes tidak memegang API key; semua panggilan lewat gateway metering Studio (ADR-0009).
+- **FR-CO-08 (P0)** **Seluruh** konsumsi OpenAI dihitung, termasuk Hermes: percakapan, setiap putaran tool call, retry, dan proses latar belakang (`background`: ringkasan, memori, skill, cron). Hermes tidak memegang API key; semua panggilan lewat gateway metering Studio (ADR-0009).
 - **FR-CO-09 (P0)** Kurs, biaya VPS, dan alokasi ada di `config/budget.yaml` (tidak di-hardcode). Kalau biaya VPS aktual berbeda dari rencana, alokasi **wajib dihitung ulang dan disetujui** sebelum API berbayar bisa diaktifkan.
 - **FR-CO-10 (P0)** Cadangan tidak bisa dibelanjakan langsung. Memakai cadangan berarti owner mengubah alokasi.
 

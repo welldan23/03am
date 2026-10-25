@@ -189,6 +189,8 @@ def test_cost_approval_refused_when_budget_insufficient(
     assert app.episodes.get(episode.id).status is S.AWAITING_COST
     assert app.approvals.get(approval.id).status is ApprovalStatus.PENDING
     assert app.budget.episode_authorization(episode.id, AuthorizationKind.PRODUCTION) is None
+    (denied,) = app.audit.entries(episode_id=episode.id, action="budget.denied")
+    assert denied.entity_id == approval.id and "higgsfield" in denied.data["reason"]
 
 
 def test_crash_mid_stage_has_no_double_effects(active_app: App, clock: FakeClock) -> None:
@@ -249,6 +251,10 @@ def test_budget_denial_fails_episode_without_retry(make_app: AppFactory, config_
     assert failed.failure_reason is not None and "batas otorisasi" in failed.failure_reason
     jobs = app.queue.list_jobs(episode_id=episode.id, status=JobStatus.FAILED)
     assert len(jobs) == 1 and jobs[0].attempts == 1
+    # Penolakan di dalam handler di-rollback bersama handler, tapi alasannya tetap tercatat.
+    (dead,) = app.audit.entries(episode_id=episode.id, action="job.dead")
+    assert "BudgetExceededError" in dead.data["error"]
+    assert "batas otorisasi" in dead.data["error"]
 
 
 def test_no_active_period_blocks_discovery(app: App) -> None:

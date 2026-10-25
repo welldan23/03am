@@ -228,31 +228,46 @@ class WorkflowService:
             if decision is Decision.APPROVE and approval.gate is Gate.TOPIC and at_gate:
                 data["choice"] = self._validate_topic_choice(episode, choice)
             if decision is Decision.APPROVE and approval.gate is Gate.COST and at_gate and is_owner:
-                self._budget.check_affordable(
-                    CostEstimate.from_dict(
-                        self._latest(episode, ArtifactKind.COST_ESTIMATE).content
-                    ),
-                    self.MODE,
-                )
+                try:
+                    self._budget.check_affordable(
+                        CostEstimate.from_dict(
+                            self._latest(episode, ArtifactKind.COST_ESTIMATE).content
+                        ),
+                        self.MODE,
+                    )
+                except BudgetExceededError as exc:
+                    # Dicatat lalu di-raise SETELAH commit supaya jejak penolakannya tersimpan.
+                    self._audit.record(
+                        actor=actor,
+                        action="budget.denied",
+                        entity_type="approval",
+                        entity_id=approval_id,
+                        episode_id=episode.id,
+                        data={"gate": approval.gate.value, "reason": exc.reason},
+                    )
+                    failure = exc
 
-            current_hash = self._current_subject_hash(episode, approval.gate) if at_gate else "-"
-            result = self._approvals.decide(
-                approval_id,
-                decision,
-                actor=actor,
-                current_subject_hash=current_hash,
-                current_episode_version=episode.version,
-                token=token,
-                notes=notes,
-                data=data,
-            )
-            if result.accepted:
-                self._apply_decision(episode, result.approval, decision, actor, notes, data)
-            else:
-                failure = self._decision_failure(result)
-                if result.outcome is DecisionOutcome.STALE and at_gate:
-                    replacement = self._request_gate(episode)
-                    failure = StaleApprovalError(str(failure), replacement.id)
+            if failure is None:
+                current_hash = (
+                    self._current_subject_hash(episode, approval.gate) if at_gate else "-"
+                )
+                result = self._approvals.decide(
+                    approval_id,
+                    decision,
+                    actor=actor,
+                    current_subject_hash=current_hash,
+                    current_episode_version=episode.version,
+                    token=token,
+                    notes=notes,
+                    data=data,
+                )
+                if result.accepted:
+                    self._apply_decision(episode, result.approval, decision, actor, notes, data)
+                else:
+                    failure = self._decision_failure(result)
+                    if result.outcome is DecisionOutcome.STALE and at_gate:
+                        replacement = self._request_gate(episode)
+                        failure = StaleApprovalError(str(failure), replacement.id)
         if failure is not None:
             raise failure
         return self._episodes.get(approval.episode_id)
@@ -342,8 +357,20 @@ class WorkflowService:
         return JobOutcome.DONE
 
     def on_job_dead(self, job: Job, error: str) -> None:
-        """Job gagal permanen → episode FAILED (kalau job itu masih relevan)."""
+        """Job gagal permanen → episode FAILED (kalau job itu masih relevan).
+
+        Dipanggil worker di transaksi baru setelah transaksi handler di-rollback, jadi di sinilah
+        alasan kegagalan (termasuk penolakan budget di dalam handler) dicatat permanen.
+        """
         episode_id = job.payload.get("episode_id")
+        self._audit.record(
+            actor=_SYSTEM,
+            action="job.dead",
+            entity_type="job",
+            entity_id=job.id,
+            episode_id=episode_id,
+            data={"type": job.type, "attempts": job.attempts, "error": error},
+        )
         if not episode_id:
             return
         try:

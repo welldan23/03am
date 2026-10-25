@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sqlite3
 import sys
 from collections.abc import Callable, Sequence
 from decimal import Decimal, InvalidOperation
@@ -38,11 +39,18 @@ Command = Callable[[App, argparse.Namespace, TextIO], None]
 
 
 def parse_actor(value: str) -> Actor:
-    """`director:<nama>` / `system:<nama>`; selain itu dianggap ID owner (misal `cli:owner`)."""
+    """Actor untuk perintah CLI.
+
+    - `director:<nama>` / `system:<nama>` untuk simulasi peran non-manusia;
+    - owner HANYA boleh beridentitas `cli:<nama>`. CLI tidak bisa menyamar sebagai owner
+      dari kanal lain (misalnya `telegram:<id>`), dan tetap harus ada di STUDIO_OWNER_IDS.
+    """
     if value.startswith("director:"):
         return Actor.director(value.removeprefix("director:"))
     if value.startswith("system:"):
         return Actor.system(value.removeprefix("system:"))
+    if not value.startswith("cli:") or value == "cli:":
+        raise StudioError(f"actor CLI tidak sah: {value!r}; owner lewat CLI harus 'cli:<nama>'")
     return Actor.owner(value)
 
 
@@ -414,6 +422,10 @@ def main(
         args.func(app, args, out)
     except (StudioError, ValueError) as exc:
         print(f"Gagal: {exc}", file=out)
+        return 1
+    except sqlite3.Error as exc:
+        # Misalnya "database is locked" saat proses lain memegang transaksi tulis.
+        print(f"Gagal (database): {exc}. Coba lagi sebentar lagi.", file=out)
         return 1
     finally:
         if owned_app:

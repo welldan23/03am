@@ -15,16 +15,20 @@ from studio.modules.budget.models import (
     AuthorizationKind,
     AuthorizationStatus,
     BudgetExceededError,
+    Category,
+    HermesPurpose,
     LedgerEntry,
     LedgerStateError,
+    LedgerStatus,
     Mode,
+    Source,
     SpendRequest,
 )
 from studio.modules.budget.plan import BudgetPlan
 from studio.modules.budget.repository import BudgetRepository
 from studio.shared.actors import Actor
 from studio.shared.clock import Clock, to_iso
-from studio.shared.errors import ConflictError
+from studio.shared.errors import ConflictError, NotFoundError
 from studio.shared.hashing import canonical_json
 from studio.shared.ids import new_id
 from studio.shared.money import FxRate, format_idr
@@ -68,7 +72,18 @@ class BudgetGuard:
 
         amount = snapshot.fx_rate.to_idr(request.usd_micros)
 
-        auth = self._repo.get_authorization(request.authorization_id)
+        try:
+            auth = self._repo.get_authorization(request.authorization_id)
+        except NotFoundError:
+            return "otorisasi tidak dikenal: tidak ada izin belanja dari owner", amount, ""
+        if request.source is Source.HERMES:
+            # Hermes hanya boleh memakai LLM, dari otorisasi operasional bulan berjalan.
+            if request.category is not Category.OPENAI:
+                return "Hermes hanya boleh belanja kategori openai", amount, ""
+            if auth.kind is not AuthorizationKind.OPERATIONAL:
+                return "Hermes hanya boleh memakai otorisasi operasional", amount, ""
+            if request.purpose not in {p.value for p in HermesPurpose}:
+                return f"purpose Hermes tidak dikenal: {request.purpose}", amount, ""
         if auth.status is not AuthorizationStatus.ACTIVE:
             return f"otorisasi {auth.kind.value} sudah dicabut", amount, snapshot.fx_usd_idr
         if auth.kind is AuthorizationKind.OPERATIONAL and auth.period != period:
@@ -116,12 +131,14 @@ class BudgetGuard:
         with self._db.transaction():
             existing = self._repo.ledger_by_key(request.idempotency_key)
             if existing is not None:
-                if (
-                    existing.reserved_usd_micros != request.usd_micros
-                    or existing.authorization_id != request.authorization_id
-                ):
+                if not request.same_spend_as(existing):
                     raise ConflictError(
                         f"idempotency key {request.idempotency_key} dipakai untuk belanja berbeda"
+                    )
+                if existing.status is LedgerStatus.RELEASED:
+                    # Retry = panggilan baru dengan key baru (ADR-0009), bukan memakai ulang.
+                    raise ConflictError(
+                        f"idempotency key {request.idempotency_key} sudah dilepas; pakai key baru"
                     )
                 return existing
 
@@ -200,13 +217,32 @@ class BudgetGuard:
             )
             actual_idr = fx.to_idr(actual_usd_micros)
             overrun = actual_idr > entry.reserved_idr
-            self._repo.mark_committed(
+            updated = self._repo.mark_committed(
                 entry_id,
                 usd_micros=actual_usd_micros,
                 idr=actual_idr,
                 overrun=overrun,
                 at=to_iso(self._clock.now()),
             )
+            if updated != 1:  # pragma: no cover - dijaga BEGIN IMMEDIATE
+                raise LedgerStateError(f"entri {entry_id} berubah saat di-commit")
+            if overrun:
+                # Uang sudah keluar: dicatat apa adanya, reservasi berikutnya akan tertahan
+                # oleh sisa alokasi yang sekarang lebih kecil (bisa negatif).
+                self._audit.record(
+                    actor=_GUARD_ACTOR,
+                    action="budget.overrun",
+                    entity_type="ledger_entry",
+                    entity_id=entry_id,
+                    episode_id=entry.episode_id,
+                    data={
+                        "reserved_idr": entry.reserved_idr,
+                        "actual_idr": actual_idr,
+                        "excess_idr": actual_idr - entry.reserved_idr,
+                        "category": entry.category.value,
+                        "source": entry.source.value,
+                    },
+                )
             self._audit.record(
                 actor=_GUARD_ACTOR,
                 action="budget.committed",
@@ -241,8 +277,8 @@ class BudgetGuard:
         """Reserve + commit sekaligus (untuk mock yang biayanya langsung diketahui)."""
         with self._db.transaction():
             entry = self.reserve(request)
-            if entry.status.value != "reserved":
-                return entry  # idempoten: sudah pernah dicatat
+            if entry.status is LedgerStatus.COMMITTED:
+                return entry  # idempoten: belanja yang sama sudah pernah dicatat
             return self.commit(
                 entry.id, request.usd_micros if actual_usd_micros is None else actual_usd_micros
             )

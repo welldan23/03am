@@ -19,7 +19,7 @@
 | Fase | Nama | Hasil utama | Status |
 |---|---|---|---|
 | 0 | Fondasi | Tooling, CI, `shared/` | ✅ selesai (bersama Fase 1) |
-| 1 | Inti domain | State machine, approval, budget, ledger, job queue, audit, CLI | ✅ selesai — **menunggu review owner** |
+| 1 | Inti domain | State machine, approval, budget, ledger, job queue, audit, CLI | ✅ selesai + audit teknis ([laporan](reviews/phase-1-audit.md)) — **menunggu persetujuan owner** |
 | 2 | Pipeline konten (mock LLM) | Discovery → research → fact check → script → storyboard | Belum dimulai |
 | 3 | Telegram Studio Bot (1 bot) | Approval G0–G3 lewat tombol, status, budget | Belum |
 | 4 | Aset, TTS, render, ekspor (mock) | MP4 utuh dari aset mock + paket ekspor + benchmark render | Belum |
@@ -88,12 +88,21 @@ MVP = Fase 0–5 selesai: satu episode bisa dibuat lengkap lewat Telegram dengan
 
 *Job queue & workflow*
 - [x] AC1.16 Worker crash di tengah job: setelah lease habis job diambil ulang, dan efeknya (artefak, ledger, transisi) tidak terjadi dua kali.
-- [x] AC1.17 Worker yang lease-nya sudah diambil worker lain tidak bisa menandai job selesai.
+- [x] AC1.17 Worker yang lease-nya sudah diambil worker lain **atau sudah kedaluwarsa** tidak bisa menandai job selesai atau gagal (fencing token). *(Bug kedaluwarsa ditemukan & diperbaiki saat audit.)*
 - [x] AC1.18 Error berulang → backoff → `FAILED`; `retry` melanjutkan dari status yang gagal. Error budget langsung `FAILED` tanpa retry.
 - [x] AC1.19 Job yang usang (episode sudah direvisi/dibatalkan) ditandai `obsolete` tanpa efek.
 - [x] AC1.20 Revisi di G3 ke `SCRIPTING` menggantikan approval G1 & G2, mencabut otorisasi produksi, dan mengembalikan episode ke `SCRIPTING`.
 - [x] AC1.21 Lewat CLI saja, episode bisa dibawa dari `DRAFT` sampai `EXPORTED` dengan handler placeholder. Semua biaya tercatat sebagai `simulated`, dan biaya `real` = Rp0.
 - [x] AC1.22 `PAID_PROVIDERS_ENABLED=true` membuat aplikasi menolak start.
+
+*Tambahan dari audit teknis (lihat [laporan audit](reviews/phase-1-audit.md))*
+- [x] AC1.23 Klaim job bersamaan dari banyak koneksi tidak pernah membagikan satu job dua kali; worker yang di-restart dengan ID sama tertolak oleh fencing token.
+- [x] AC1.24 Reservasi anggaran bersamaan dari banyak koneksi tidak bisa melewati alokasi; idempotency key yang sama dari banyak koneksi hanya tercatat sekali; key yang sama untuk belanja berbeda ditolak.
+- [x] AC1.25 Overrun tercatat (`overrun` + audit `budget.overrun`) dan menahan belanja berikutnya.
+- [x] AC1.26 Database menolak keluar dari gate tanpa keputusan owner yang tercatat, dan menolak otorisasi belanja yang tidak lahir dari approval G0/G2 yang sah.
+- [x] AC1.27 Keputusan approval bersamaan (klik ganda dari banyak koneksi) dieksekusi tepat sekali: satu transisi, satu job, satu otorisasi.
+- [x] AC1.28 Hermes hanya bisa belanja `openai` lewat otorisasi operasional; semua purpose (`conversation`, `tool_call`, `retry`, `background`) memotong alokasi yang sama dengan Studio.
+- [x] AC1.29 CLI tidak bisa menyamar sebagai owner kanal lain.
 
 ---
 
@@ -175,7 +184,7 @@ MVP = Fase 0–5 selesai: satu episode bisa dibuat lengkap lewat Telegram dengan
 **Acceptance Criteria**
 - [ ] AC5.1 Spike menjawab: versi, mode headless yang dipakai, cara pasang MCP & allowlist, cara matikan toolset berbahaya, RAM, dan token per giliran. Hasilnya menentukan ADR-0005 tetap (satu bot) atau pindah ke rencana cadangan.
 - [ ] AC5.2 Hermes tidak menerima token bot Telegram maupun API key OpenAI (cek config + test startup).
-- [ ] AC5.3 Setiap request LLM Hermes (percakapan, tool call, retry, internal) melewati gateway dan tercatat di ledger dengan `source=hermes`. Request saat budget habis ditolak gateway tanpa diteruskan.
+- [ ] AC5.3 Setiap request LLM Hermes (percakapan, tool call, retry, background) melewati gateway dan tercatat di ledger dengan `source=hermes`. Request saat budget habis ditolak gateway tanpa diteruskan.
 - [ ] AC5.4 Gateway memaksa batas `max_tokens` dan meng-commit biaya dari `usage`. Timeout setelah request terkirim di-commit sebesar reservasi.
 - [ ] AC5.5 MCP server lulus contract test; tidak ada tool approve/reject/budget/ekspor.
 - [ ] AC5.6 `MockDirector` "nakal" yang mencoba melewati gate gagal.

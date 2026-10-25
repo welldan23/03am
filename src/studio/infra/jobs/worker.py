@@ -45,15 +45,17 @@ class Worker:
         self._on_dead = on_dead
 
     def _dead(self, job: Job, error: str) -> None:
+        """Hook dead-letter. Selalu dipanggil di DALAM transaksi yang menandai job `failed`,
+        supaya status job dan efek hook (misalnya episode → FAILED) tidak pernah terpisah."""
         _log.warning("job.dead", job_id=job.id, job_type=job.type, error=error)
         if self._on_dead is not None:
-            with self._db.transaction():
-                self._on_dead(job, error)
+            self._on_dead(job, error)
 
     def run_once(self) -> Job | None:
         """Proses satu job. Mengembalikan job yang diklaim, atau None kalau antrean kosong."""
-        for exhausted in self._queue.reap_exhausted():
-            self._dead(exhausted, exhausted.last_error or "lease habis")
+        with self._db.transaction():
+            for exhausted in self._queue.reap_exhausted():
+                self._dead(exhausted, exhausted.last_error or "lease habis")
 
         job = self._queue.claim(self._worker_id, self._lease_seconds)
         if job is None:
@@ -68,25 +70,27 @@ class Worker:
                 status = (
                     JobStatus.OBSOLETE if outcome is JobOutcome.OBSOLETE else JobStatus.SUCCEEDED
                 )
-                self._queue.complete(job.id, self._worker_id, status)
+                self._queue.complete(job.id, self._worker_id, job.lease_token, status)
             _log.info("job.completed", job_id=job.id, job_type=job.type, outcome=outcome.value)
         except LeaseLostError:
             _log.warning("job.lease_lost", job_id=job.id)
         except Exception as exc:
             error = f"{type(exc).__name__}: {exc}"
             try:
-                failed = self._queue.fail(
-                    job.id,
-                    self._worker_id,
-                    error,
-                    retryable=not isinstance(exc, NonRetryableError),
-                )
+                with self._db.transaction():
+                    failed = self._queue.fail(
+                        job.id,
+                        self._worker_id,
+                        job.lease_token,
+                        error,
+                        retryable=not isinstance(exc, NonRetryableError),
+                    )
+                    if failed.status is JobStatus.FAILED:
+                        self._dead(failed, error)
             except LeaseLostError:
                 _log.warning("job.lease_lost", job_id=job.id)
                 return job
-            if failed.status is JobStatus.FAILED:
-                self._dead(failed, error)
-            else:
+            if failed.status is not JobStatus.FAILED:
                 _log.info("job.retry_scheduled", job_id=job.id, attempts=failed.attempts)
         return job
 

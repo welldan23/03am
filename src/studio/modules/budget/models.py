@@ -31,6 +31,15 @@ class Source(StrEnum):
     HERMES = "hermes"
 
 
+class HermesPurpose(StrEnum):
+    """Semua jenis pemakaian LLM oleh Hermes yang wajib dimeter (ADR-0009)."""
+
+    CONVERSATION = "conversation"
+    TOOL_CALL = "tool_call"
+    RETRY = "retry"
+    BACKGROUND = "background"  # memori, ringkasan, skill, cron — semua kerja di luar giliran
+
+
 class LedgerStatus(StrEnum):
     RESERVED = "reserved"
     COMMITTED = "committed"
@@ -86,6 +95,20 @@ class SpendRequest:
             raise ValueError("biaya tidak boleh negatif")
         if not self.idempotency_key:
             raise ValueError("idempotency_key wajib diisi")
+        if not self.purpose:
+            raise ValueError("purpose wajib diisi")
+
+    def same_spend_as(self, entry: LedgerEntry) -> bool:
+        """Apakah entri ledger yang sudah ada mewakili belanja yang persis sama?"""
+        return (
+            entry.reserved_usd_micros == self.usd_micros
+            and entry.authorization_id == self.authorization_id
+            and entry.category is self.category
+            and entry.source is self.source
+            and entry.purpose == self.purpose
+            and entry.mode is self.mode
+            and entry.episode_id == self.episode_id
+        )
 
 
 @dataclass(frozen=True)

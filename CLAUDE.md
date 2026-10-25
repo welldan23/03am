@@ -37,6 +37,7 @@ Aturan batas modul (dicek `import-linter`, kontrak di `pyproject.toml`):
 - `episodes`, `approvals`, `budget`, `artifacts` **tidak boleh saling import**. Koordinasi hanya di `workflow`.
 - Modul import API publik modul lain (`from studio.modules.budget import BudgetGuard`), bukan `repository.py`-nya.
 - Satu tabel dimiliki satu modul. Skema baru = file migrasi baru (`NNNN_nama.sql`); file migrasi lama **tidak boleh diubah** (checksum dicek).
+- Trigger di `0003_security_invariants.sql` adalah lapisan keamanan kedua (gate butuh keputusan tercatat, otorisasi belanja butuh approval sah, uang integer, ledger final). **Jangan dihapus atau dilonggarkan**; kalau perlu diubah, buat migrasi baru + ADR + test.
 - `interfaces/mcp` (nanti) tidak boleh membuka aksi approve/reject/budget/ekspor.
 
 ## 4. Standar Kode
@@ -49,7 +50,8 @@ Aturan batas modul (dicek `import-linter`, kontrak di `pyproject.toml`):
 - **ID = ULID monotonik** lewat `shared.ids.new_id(clock)`.
 - Error domain turunan `StudioError` di `shared/errors.py`; jangan `except Exception: pass`.
 - **Core sinkron.** Interface async (Telegram, gateway — Fase 3/5) memanggil core lewat `asyncio.to_thread`.
-- Tulis ke DB selalu di dalam `db.transaction()` (reentrant, pakai SAVEPOINT). Handler job berjalan di transaksi yang sama dengan penandaan job selesai, jadi handler **tidak boleh** melakukan efek di luar DB tanpa idempotency key.
+- Tulis ke DB selalu di dalam `db.transaction()` (reentrant, pakai SAVEPOINT). Handler job berjalan di transaksi yang sama dengan penandaan job selesai, jadi handler **tidak boleh** melakukan efek di luar DB tanpa idempotency key, dan **tidak boleh** melakukan panggilan jaringan di dalam transaksi itu (memblokir semua penulis lain).
+- Job: `complete`/`fail` wajib membawa `lease_token` dari job yang diklaim. Jangan pernah menyelesaikan job tanpa token itu.
 - Penolakan yang harus tetap tercatat (approval stale/expired, penolakan budget) jangan di-`raise` di dalam transaksi yang akan di-rollback: kembalikan hasil, lalu raise setelah commit (lihat `ApprovalService.decide` → `WorkflowService.decide`).
 - FFmpeg (Fase 4) dipanggil lewat `infra/ffmpeg` (list argumen, **tanpa** `shell=True`).
 - Prompt LLM (Fase 2) disimpan di `prompts/` sebagai file, bukan string panjang di kode.

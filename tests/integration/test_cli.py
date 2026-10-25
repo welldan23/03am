@@ -106,3 +106,19 @@ def test_paid_providers_flag_refuses_start(
     assert main(["budget", "plan"], settings=settings, out=out) == 2
     assert "PAID_PROVIDERS_ENABLED=true ditolak" in out.getvalue()
     assert not (tmp_path / "d").exists()  # ditolak sebelum database dibuat
+
+
+def test_database_errors_are_reported_without_traceback(
+    app: App, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import sqlite3
+
+    from studio.interfaces.cli import main as cli
+
+    def locked(*_: object) -> None:
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(cli, "cmd_budget_status", locked)
+    code, text = run(app, "budget", "status")
+    assert code == 1
+    assert "database is locked" in text
