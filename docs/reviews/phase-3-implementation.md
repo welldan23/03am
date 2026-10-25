@@ -154,7 +154,16 @@ Kontrol keamanan sengaja dirusak satu per satu, lalu `tests/telegram` dijalankan
 
 ## 5. Hasil GitHub Actions
 
-_Diisi setelah push (lihat §8)._
+Run [#7 (id 40238535074)](https://github.com/welldan23/03am/actions/runs/40238535074), event `push`, commit `b702c18`. Dicek lewat GitHub API (daftar job + log), bukan asumsi.
+
+| Job | Install (`uv sync --locked`) | Lint | Format | Typecheck | Batas modul | Test (offline) | Kesimpulan |
+|---|---|---|---|---|---|---|---|
+| `check (3.12)` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ `389 passed in 32.11s` | **success** |
+| `check (3.13)` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ `389 passed in 27.55s` | **success** |
+
+Satu-satunya warning: *"Node.js 20 is deprecated"* untuk `actions/checkout@v4` dan `astral-sh/setup-uv@v6` (TD-13). Warning ini tidak menggagalkan build.
+
+Commit laporan ini (hanya dokumen) memicu run CI baru; hasilnya dilaporkan di ringkasan akhir ke owner.
 
 ---
 
@@ -314,4 +323,9 @@ Dihasilkan dari bot asli (engine + controller + SQLite + mock provider) dengan f
 
 ## 8. Commit
 
-_Diisi setelah push._
+| Commit | Isi |
+|---|---|
+| `b702c18` | Seluruh kode, test, dan dokumen Fase 3 (CI hijau, lihat §5) |
+| commit berikutnya | Laporan ini dilengkapi hasil CI (dokumen saja) |
+
+Branch: `claude/phase-3-telegram`. Belum ada PR dan belum di-merge; menunggu persetujuan owner sebelum Fase 4.
