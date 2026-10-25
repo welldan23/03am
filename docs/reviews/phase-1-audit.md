@@ -99,7 +99,7 @@ Aturan yang dipakai: sebuah AC hanya dianggap terpenuhi kalau **perilakunya dibu
 |---|---|---|
 | AC0.1 uv sync + pytest 3.12 & 3.13 | ✅ | lokal 3.12 & 3.13; CI matrix |
 | AC0.2 ruff, format, mypy, lint-imports | ✅ | §2 |
-| AC0.3 CI hijau | ⏳ | diverifikasi di §7 untuk commit hasil audit |
+| AC0.3 CI hijau | ✅ | run 40211487662 untuk `534b85e`, 3.12 & 3.13 (§7) |
 | AC0.4 jaringan diblokir di test | ✅ | `test_network_is_blocked_in_tests` |
 | AC0.5 redaksi secret di log | ✅ | `test_sensitive_keys_are_redacted`, `test_secret_values_from_env_are_scrubbed_everywhere` |
 | AC0.6 `python -m studio --help` | ✅ | `test_module_help_runs` |
@@ -128,9 +128,7 @@ Aturan yang dipakai: sebuah AC hanya dianggap terpenuhi kalau **perilakunya dibu
 | AC1.22 PAID_PROVIDERS_ENABLED=true menolak start | ✅ | `test_paid_providers_flag_refuses_start` |
 | AC1.23–AC1.29 (tambahan audit) | ✅ | lihat §3 & §4 |
 
-**Yang belum terpenuhi:** tidak ada AC Fase 0/1 yang gagal.
-- AC0.3 masih menunggu bukti CI untuk commit hasil audit.
-- AC0.7 hanya bisa diverifikasi manual.
+**Yang belum terpenuhi:** tidak ada AC Fase 0/1 yang gagal. AC0.7 hanya bisa diverifikasi manual.
 
 ## 6. Technical Debt & Risiko yang Tersisa
 
@@ -148,18 +146,28 @@ Aturan yang dipakai: sebuah AC hanya dianggap terpenuhi kalau **perilakunya dibu
 | TD-10 | Rendah | Revisi setelah G2 menagih ulang semua aset (simulasi). Pemakaian ulang shot yang tidak berubah baru ada di Fase 4. | Fase 4 |
 | TD-11 | Rendah | Urutan ULID monoton hanya dijamin dalam satu proses. Antar-proses, urutannya per milidetik. | Diterima |
 | TD-12 | Info | `mypy` hanya dijalankan untuk `src/`, tidak untuk `tests/`. Branch default GitHub masih `claude/planning-docs`. | Keputusan owner |
+| TD-13 | Rendah | CI memakai `actions/checkout@v4` dan `astral-sh/setup-uv@v6` yang menargetkan Node.js 20 (deprecated; GitHub memaksanya jalan di Node 24). Perlu dinaikkan ke major terbaru setelah versinya diverifikasi. | Sebelum Fase 2 / kapan saja |
 
 ## 7. GitHub Actions
 
-Status CI diisi **setelah** commit audit di-push dan run-nya selesai. Lihat bagian di bawah.
+Diverifikasi lewat GitHub API setelah push (bukan diasumsikan):
 
-<!-- CI-RESULT -->
+| Run | Commit | Job | Hasil |
+|---|---|---|---|
+| [#3 — 40211487662](https://github.com/welldan23/03am/actions/runs/40211487662) | `534b85e` (perbaikan audit) | `check (3.12)` | ✅ success — log: `collected 198 items` … `198 passed in 4.89s` |
+| | | `check (3.13)` | ✅ success |
+
+Semua step lulus di kedua job: Install (`uv sync --locked`), Lint, Format, Typecheck, Batas modul, Test.
+
+Catatan dari log CI: ada warning *"Node.js 20 is deprecated"* untuk `actions/checkout@v4` dan `astral-sh/setup-uv@v6` (lihat TD-13). Warning ini tidak menggagalkan build.
+
+Commit laporan ini (hanya dokumen) ikut memicu CI. Statusnya dilaporkan terpisah di ringkasan akhir.
 
 ## 8. Rekomendasi
 
 **Phase 1 layak ditutup**, dengan dua syarat:
 
-1. CI GitHub Actions hijau untuk commit hasil audit (§7).
+1. ~~CI GitHub Actions hijau untuk commit hasil audit~~ ✅ terpenuhi (§7).
 2. **TD-01 jadi keputusan desain pertama Fase 2**, sebelum ada handler yang memanggil LLM/provider (meskipun mock).
 
 Tidak ada temuan tingkat tinggi yang masih terbuka di lingkup Fase 1.
