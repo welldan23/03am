@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Draft v0.2 — satu bot Telegram, metering token Hermes, desain Fase 1 |
+| Status | Draft v0.3 — eksekusi job dua fase, research & script engine (Fase 2) |
 | Gaya | Modular monolith, ports & adapters (hexagonal) |
 | Dokumen terkait | [PRD.md](PRD.md) · [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) · [RISKS.md](RISKS.md) · [ADR](adr/README.md) |
 
@@ -66,7 +66,7 @@
 
 ## 4. Struktur Repository (Modular Monolith)
 
-Yang bertanda ✅ sudah ada sejak Fase 1. Sisanya rencana.
+Yang bertanda ✅ sudah ada (Fase 1–2). Sisanya rencana.
 
 ```
 03am/
@@ -76,8 +76,9 @@ Yang bertanda ✅ sudah ada sejak Fase 1. Sisanya rencana.
 ├── config/
 │   ├── budget.yaml              # kurs, VPS, alokasi, batas               ✅
 │   ├── pricing.yaml             # harga per unit (placeholder)           ✅
-│   └── styles/                  # style bible per kategori                (Fase 2)
-├── prompts/                                                               (Fase 2)
+│   ├── llm.yaml                 # tier, max output, timeout per task     ✅
+│   ├── editorial.yaml           # aturan riset, WPM, format, editorial   ✅
+│   └── styles/                  # style bible per kategori                (Fase 4)
 ├── hermes/                      # config contoh + skill Director          (Fase 5)
 ├── src/studio/
 │   ├── __main__.py              # `python -m studio`                      ✅
@@ -86,7 +87,7 @@ Yang bertanda ✅ sudah ada sejak Fase 1. Sisanya rencana.
 │   │                            # config, logging
 │   ├── infra/
 │   │   ├── db/                  # koneksi, transaksi, migrator, migrations/*.sql  ✅
-│   │   ├── jobs/                # antrean + worker dengan lease            ✅
+│   │   ├── jobs/                # antrean, worker, Lease (dua fase)        ✅
 │   │   ├── storage/ · ffmpeg/                                             (Fase 4)
 │   ├── modules/
 │   │   ├── audit/               # audit log append-only                    ✅
@@ -94,17 +95,23 @@ Yang bertanda ✅ sudah ada sejak Fase 1. Sisanya rencana.
 │   │   ├── artifacts/           # konten berversi + hash                   ✅
 │   │   ├── approvals/           # gate G0–G3, version-aware, token         ✅
 │   │   ├── budget/              # rencana, harga, estimasi, ledger, guard  ✅
-│   │   ├── workflow/            # orkestrator + handler placeholder        ✅
-│   │   ├── discovery · research · factcheck · scripting · storyboard      (Fase 2)
-│   │   ├── assets · voice · render · export                               (Fase 4)
-│   ├── providers/  llm · image · video · tts · sources                    (Fase 2+)
+│   │   ├── calls/               # MeteredCaller + LLMClient (provider_calls) ✅
+│   │   ├── research/            # discovery, riset, sumber, fact checker   ✅
+│   │   ├── scripting/           # naskah 3 format, timing, editorial gate  ✅
+│   │   ├── workflow/            # orkestrator, ContentStages, placeholder  ✅
+│   │   ├── storyboard · assets · voice · render · export                  (Fase 4)
+│   ├── prompts/                 # template prompt per task (.md)           ✅
+│   ├── providers/
+│   │   ├── llm/ · sources/      # port + mock + fixtures/                  ✅
+│   │   ├── tickets.py           # SpendTicket (HMAC) dari MeteredCaller    ✅
+│   │   └── image · video · tts                                            (Fase 4+)
 │   ├── director/   DirectorPort + MockDirector                            (Fase 5)
 │   └── interfaces/
 │       ├── cli/                                                           ✅
 │       ├── telegram/                                                      (Fase 3)
 │       └── mcp/ · llm_gateway/                                            (Fase 5)
 └── tests/  unit/ · integration/                                           ✅
-           contract/ · e2e/                                                (Fase 2+)
+           contract/ · e2e/                                                (Fase 4+)
 ```
 
 ### 4.1 Isi standar satu modul
@@ -120,14 +127,15 @@ modules/approvals/
 ### 4.2 Aturan dependensi (ditegakkan `import-linter`)
 
 ```
-interfaces ─▶ bootstrap ─▶ modules.workflow ─▶ {episodes | approvals | budget | artifacts}
-                                                        ─▶ modules.audit ─▶ infra ─▶ shared
+interfaces ─▶ bootstrap ─▶ workflow ─▶ scripting ─▶ research ─▶ calls
+           ─▶ {episodes | approvals | budget | artifacts} ─▶ audit ─▶ {infra | providers} ─▶ shared
 ```
 
 - Lapisan atas boleh memakai lapisan bawah, tidak sebaliknya.
 - `episodes`, `approvals`, `budget`, dan `artifacts` **saling independen**. Koordinasi antar-modul hanya terjadi di `workflow`.
 - Modul import API publik modul lain (`from studio.modules.budget import BudgetGuard`), bukan `repository.py`-nya.
-- Adapter konkret hanya dirakit di `bootstrap.py`.
+- Adapter konkret hanya dirakit di `bootstrap.py`. Kontrak `forbidden` melarang `modules`/`interfaces` meng-import `studio.providers.*.mock`.
+- Provider hanya dipanggil lewat `modules.calls.MeteredCaller` (reserve → panggil dengan tiket → commit). `App` tidak mengekspos provider mentah.
 - `interfaces/mcp` (Fase 5) tidak boleh membuka aksi approve/reject/budget/ekspor.
 
 ## 5. Interface: Telegram & Hermes
@@ -266,19 +274,51 @@ panggilan provider ─▶ sukses: COMMITTED (biaya aktual; tandai overrun bila >
 | `spend_authorizations` | budget | jenis, batas, status, approval asal |
 | `ledger_entries` | budget | reservasi/realisasi, kurs, mode, sumber, tujuan |
 | `jobs` | infra/jobs | antrean dengan lease + fencing token (`lease_token`) |
+| `provider_calls` | calls | satu baris per panggilan provider: key idempotensi, status, attempt, estimasi token/biaya, otorisasi, ledger, respons, biaya aktual (Fase 2, migrasi `0004`) |
 
-Tabel Fase berikut (`sources`, `claims`, `shots`, `assets`, `provider_calls`, …) ditambah lewat migrasi baru oleh modul pemiliknya.
+Fase 2 juga menambah kolom `episodes.format` (`quick_files`/`archives`/`deep_files`). Sumber, bukti, dan klaim disimpan sebagai **artefak berversi** (`research`, `factcheck`, `script`, `editorial_report`), bukan tabel sendiri, supaya ikut terikat `subject_hash` approval. Tabel lain (`shots`, `assets`, …) ditambah lewat migrasi baru oleh modul pemiliknya.
 
 ## 7. Pipeline & Job
 
 - `jobs(id, type, episode_id, payload, status, attempts, max_attempts, run_after, lease_owner, lease_until, lease_token, idempotency_key UNIQUE, last_error)`.
 - Worker mengambil job dengan **lease**. Job `running` yang lease-nya habis (worker crash) diambil ulang.
 - Setiap klaim menaikkan **fencing token** `lease_token`. `complete`/`fail` adalah satu `UPDATE` bersyarat: `status='running' AND lease_owner=? AND lease_token=? AND lease_until > now`. Worker yang lease-nya kedaluwarsa, diambil worker lain, atau di-restart dengan ID sama tidak bisa menyelesaikan job (`LeaseLostError`).
-- Handler + pencatatan sukses berjalan dalam **satu transaksi**. Crash di tengah atau lease hilang = rollback, aman diulang tepat sekali.
-- **Batasan yang disadari:** handler berjalan di dalam transaksi `BEGIN IMMEDIATE`, jadi selama handler jalan, penulis lain menunggu. Ini aman untuk handler placeholder Fase 1 yang cepat, tapi **tidak boleh** dipakai untuk panggilan jaringan (LLM/provider). Fase 2 wajib memisahkan: reservasi + catat request (commit) → panggil provider di luar transaksi → selesaikan job (commit). Lihat `docs/reviews/phase-1-audit.md` (TD-01).
+- **Eksekusi dua fase** ([ADR-0011](adr/0011-eksekusi-job-dua-fase.md), menyelesaikan TD-01): handler `(job, lease)` berjalan **di luar** transaksi. I/O ke provider lewat `MeteredCaller` (setiap langkah DB-nya transaksi singkat sendiri). Hasil ditulis lewat `lease.finish(work)`: satu transaksi singkat yang menulis hasil sekaligus `complete` dengan cek fencing. Lease hilang = rollback hasil, biaya yang sudah ditagih tetap ada di ledger.
+- Job yang diulang memakai ulang hasil panggilan provider yang sudah sukses (key idempotensi sama). Panggilan yang hasilnya tidak diketahui (timeout / worker mati di tengah) **tidak** diulang otomatis.
+- Handler yang hanya menulis DB dibungkus `atomic()` (perilaku Fase 1).
 - Payload job stage membawa `expected_status` + `expected_version`. Kalau episode sudah berubah (revisi/batal), job ditandai `obsolete` tanpa efek.
 - Error biasa → retry dengan backoff eksponensial sampai `max_attempts`, lalu episode `FAILED`. Error non-retryable (misalnya budget habis) → langsung `FAILED`.
-- Fase 1 memakai **handler placeholder** yang membuat artefak contoh dan mencatat biaya simulasi. Handler asli menggantikannya di Fase 2 & 4.
+- Tahap konten (`DISCOVERING`, `RESEARCHING`, `FACT_CHECKING`, `SCRIPTING`) dijalankan `ContentStages` (Fase 2). Tahap setelah G1 masih **placeholder** (storyboard diturunkan dari segmen naskah; estimasi biaya, aset, render simulasi) sampai Fase 4.
+
+### 7.1 Research pipeline (Fase 2)
+
+```
+DISCOVERING  topic_discovery ─▶ 5 TopicCandidate ─▶ G0 (owner pilih --choice)
+RESEARCHING  research_plan ─▶ SourceProvider (fixture) ─▶ scan injeksi + sanitasi
+             ─▶ evidence_extraction per sumber ─▶ claim_analysis
+             ─▶ artefak `research` (dossier: plan, sumber, teks, bukti, klaim mentah)
+FACT_CHECKING FactChecker (deterministik, tanpa LLM) ─▶ ResearchBrief + ResearchQualityReport
+```
+
+- **Otorisasi:** discovery memakai otorisasi operasional (sebelum G0); riset, fact check, dan naskah memakai otorisasi pra-produksi yang lahir dari approve G0 (batas Rp5.000/episode).
+- **Sumber** dinilai tier 1–5 (arsip/jurnal → blog/forum) + skor. Sumber yang terbit sebelum peristiwa tidak dihitung. Kelompok independensi dihitung dengan union-find atas `origin` + `derived_from` (artikel yang mengutip sumber lain = satu kelompok).
+- **Anti prompt-injection:** teks sumber dipindai pola injeksi (`config/editorial.yaml`). Sumber yang cocok dikarantina (`INJECTION_SUSPECTED`): teksnya disensor sebelum masuk prompt, buktinya tidak dihitung, dan tidak diteruskan ke analisis klaim. Semua data masuk prompt lewat `wrap_data` (`<<<DATA … DATA>>>`) dengan instruksi sistem bahwa isinya bukan instruksi.
+- **FactChecker:** kutipan bukti harus ada persis di teks sumber (setelah normalisasi spasi); sumber/URL yang tidak terdaftar ditolak. Klaim `critical` butuh ≥2 kelompok independen, `supporting` ≥1, dengan tier terbaik ≤3. Ada bukti pembantah dari sumber tier ≤4 → `disputed`. Kategori akhir: `verified_fact`, `interpretation`, `hypothesis`, `disputed`, `unverified`. Kurang dari 3 fakta terverifikasi → laporan gagal, episode `FAILED` dari `FACT_CHECKING`.
+- Output LLM **tidak pernah** dianggap sumber.
+
+### 7.2 Script engine & editorial gate (Fase 2)
+
+| Format | Rentang | Default |
+|---|---|---|
+| Quick Files | 30–45 s | 40 s |
+| The Archives | 75–90 s | 80 s |
+| Deep Files | 120–180 s | 135 s |
+
+- `script_generation` (tier `smart`) menghasilkan `ScriptDraft`: 5 segmen wajib berurutan `hook → context → conflict → explanation → closing`, tiap kalimat membawa `claim_refs`, plus arahan visual dan catatan pelafalan. `build_script` menghitung timing dari jumlah kata ÷ WPM (default 150, configurable) + jeda antarsegmen.
+- **EditorialGate** deterministik. Blocking: struktur, rujukan klaim tidak dikenal, klaim `unverified` dipakai, klaim `disputed`/`hypothesis` tanpa kata penanda (hedge), angka tanpa sumber atau tidak cocok dengan klaim, segmen faktual tanpa rujukan, terlalu panjang, sensasional (≥2 istilah), kutipan >20 kata, menyalin ≥15 kata berturut dari sumber, dua klaim yang saling bertentangan sama-sama ditegaskan. Warning: terlalu pendek, mirip sumber ≥10 kata, narasi kurang mirip klaim, kalimat tanpa rujukan, atribusi kabur ("konon", "banyak orang bilang"), satu istilah sensasional.
+- Gagal → satu kali auto-revisi (`script_revision`) dengan daftar masalah. Masih gagal → episode `FAILED` dari `SCRIPTING` + artefak `editorial_report` berisi instruksi revisi.
+- `script_quality_review` (LLM) hanya menambah catatan advisory; field seperti `approve`/`passed` diabaikan.
+- **Override** hanya oleh owner (`override_editorial`, alasan ≥10 karakter, hanya untuk `FAILED` dari `SCRIPTING`): episode lanjut ke G1 dengan laporan bertanda `overridden`, dan override ikut di subjek kartu G1. **AI tidak bisa approve G1**; G1 tetap keputusan owner.
 - Untuk provider asli yang async (Higgsfield, Fase 6), panggilan eksternal tidak bisa ikut transaksi. Karena itu `request_id` disimpan di transaksi terpisah sebelum polling.
 
 ## 8. Hybrid Model Routing (LLM)
@@ -290,7 +330,9 @@ Tabel Fase berikut (`sources`, `claims`, `shots`, `assets`, `provider_calls`, �
 
 - Nama model asli dan harga per 1 juta token ada di `config/pricing.yaml`. Fase 1 memakai nilai **placeholder** yang ditandai belum terverifikasi.
 - Semua panggilan, baik dari Studio maupun Hermes, lewat `BudgetGuard` (ADR-0009).
-- Output wajib JSON tervalidasi Pydantic, ada cache per hash input, dan bisa turun ke tier `fast` saat budget menipis (Fase 2).
+- Tier, `max_output_tokens`, dan timeout per task ada di `config/llm.yaml`. Estimasi input = karakter prompt ÷ `chars_per_token` (4); reservasi = biaya terburuk (input + output maksimum).
+- Output wajib JSON tervalidasi Pydantic. JSON tidak valid → satu kali retry dengan key `…:json-retry1` dan purpose `<task>.retry` (dihitung sebagai panggilan terpisah).
+- "Cache" = reuse hasil sukses lewat key idempotensi (bukan cache lintas episode). Turun ke tier `fast` saat budget menipis belum dibuat (lihat technical debt Fase 2).
 
 ## 9. Asset, Voice & Render (Fase 4)
 
@@ -368,3 +410,4 @@ data/                       (tidak masuk git)
 | ADR-0008 | Antrean job di SQLite | Diterima |
 | [ADR-0009](adr/0009-metering-token-llm.md) | Semua token LLM lewat gateway metering | **Diterima** |
 | [ADR-0010](adr/0010-rencana-anggaran-dan-otorisasi.md) | Rencana anggaran, kurs, otorisasi belanja | **Diterima** |
+| [ADR-0011](adr/0011-eksekusi-job-dua-fase.md) | Eksekusi job dua fase + `provider_calls` | **Diterima** |

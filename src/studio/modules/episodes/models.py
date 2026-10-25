@@ -20,6 +20,12 @@ class Category(StrEnum):
     MISTERI = "misteri"
 
 
+class DocumentaryFormat(StrEnum):
+    QUICK_FILES = "quick_files"  # 30–45 detik
+    ARCHIVES = "archives"  # 75–90 detik
+    DEEP_FILES = "deep_files"  # 120–180 detik
+
+
 class EpisodeStatus(StrEnum):
     DRAFT = "DRAFT"
     DISCOVERING = "DISCOVERING"
@@ -62,6 +68,7 @@ class Episode:
     id: str
     category: Category
     target_duration_s: int
+    format: DocumentaryFormat | None
     idea: str | None
     title: str | None
     status: EpisodeStatus
@@ -77,6 +84,7 @@ class Episode:
             id=row["id"],
             category=Category(row["category"]),
             target_duration_s=row["target_duration_s"],
+            format=DocumentaryFormat(row["format"]) if row["format"] else None,
             idea=row["idea"],
             title=row["title"],
             status=EpisodeStatus(row["status"]),

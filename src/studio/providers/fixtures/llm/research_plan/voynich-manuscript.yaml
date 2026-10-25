@@ -1,0 +1,10 @@
+# FIXTURE UJI: rencana riset mock.
+response:
+  objective: "Memisahkan fakta terverifikasi tentang naskah Voynich dari klaim pemecahan yang belum diterima."
+  questions:
+    - {id: Q1, question: "Di mana naskah disimpan dan dari mana namanya?", priority: critical}
+    - {id: Q2, question: "Berapa usia bahan naskah menurut uji ilmiah?", priority: critical}
+    - {id: Q3, question: "Apakah teksnya sudah berhasil dibaca?", priority: critical}
+    - {id: Q4, question: "Apa kata analisis statistik tentang teksnya?", priority: supporting}
+  search_queries: ["Naskah Voynich", "radiokarbon vellum Voynich", "teks Voynich bahasa"]
+  out_of_scope: ["Teori konspirasi tanpa sumber"]

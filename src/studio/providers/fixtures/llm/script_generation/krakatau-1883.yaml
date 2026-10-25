@@ -1,0 +1,121 @@
+# FIXTURE UJI: naskah mock per format. Setiap kalimat membawa rujukan klaim (ID dari brief).
+responses:
+  quick_files:
+    title: "Dentuman dari Selat Sunda"
+    segments:
+      - role: hook
+        visual_direction: "Laut lepas saat fajar; peta Samudra Hindia dengan titik Pulau Rodrigues."
+        lines:
+          - {text: "Pada pagi 27 Agustus 1883, dentuman dari Selat Sunda terdengar sampai Pulau Rodrigues, sekitar 4.800 kilometer jauhnya.", claim_refs: [C-krak-peak-date, C-krak-sound, C-krak-location]}
+      - role: context
+        visual_direction: "Peta Selat Sunda; ilustrasi gugusan pulau vulkanik."
+        lines:
+          - {text: "Sumbernya adalah Krakatau, gugusan pulau vulkanik di antara Jawa dan Sumatra.", claim_refs: [C-krak-location]}
+          - {text: "Aktivitasnya sudah meningkat sejak Mei, sebelum mencapai puncak pada akhir Agustus.", claim_refs: [C-krak-activity-may, C-krak-peak-date]}
+      - role: conflict
+        visual_direction: "Garis pantai yang tenang sebelum gelombang datang."
+        lines:
+          - {text: "Tetapi korban terbanyak justru jatuh karena laut.", claim_refs: [C-krak-tsunami]}
+      - role: explanation
+        visual_direction: "Ilustrasi gelombang di pesisir Banten dan Lampung; arsip bergaya dokumen lama."
+        lines:
+          - {text: "Letusan itu memicu tsunami di pesisir Banten dan Lampung.", claim_refs: [C-krak-tsunami]}
+          - {text: "Catatan resmi menyebut lebih dari 36.000 orang tewas.", claim_refs: [C-krak-deaths]}
+      - role: closing
+        visual_direction: "Langit senja merah di atas kota pelabuhan."
+        lines:
+          - {text: "Selama berbulan-bulan sesudahnya, senja di banyak negara tampak merah menyala, seolah langit ikut mencatat bencana itu.", claim_refs: [C-krak-sunsets]}
+          - {text: "Berita bencananya menyebar ke berbagai benua dalam hitungan jam lewat telegraf.", claim_refs: [C-krak-telegraph]}
+    pronunciation_notes:
+      - {term: "Rodrigues", guide: "ro-DRI-ges"}
+      - {term: "Krakatau", guide: "kra-ka-TAU"}
+
+  archives:
+    title: "Dentuman yang Terdengar Ribuan Kilometer"
+    segments:
+      - role: hook
+        visual_direction: "Laut lepas saat fajar; peta Samudra Hindia dengan titik Pulau Rodrigues."
+        lines:
+          - {text: "Pada pagi 27 Agustus 1883, sebuah dentuman terdengar di Pulau Rodrigues, di tengah Samudra Hindia.", claim_refs: [C-krak-peak-date, C-krak-sound]}
+          - {text: "Sumber suara itu berjarak sekitar 4.800 kilometer.", claim_refs: [C-krak-sound]}
+      - role: context
+        visual_direction: "Peta Selat Sunda; ilustrasi gugusan pulau vulkanik, tanpa wajah tokoh."
+        lines:
+          - {text: "Suara itu datang dari Krakatau, gugusan pulau vulkanik di Selat Sunda, di antara Jawa dan Sumatra.", claim_refs: [C-krak-location]}
+          - {text: "Aktivitasnya sudah meningkat sejak Mei, dan puncaknya terjadi pada 26 dan 27 Agustus.", claim_refs: [C-krak-activity-may, C-krak-peak-date]}
+          - {text: "Selama berbulan-bulan, gunung itu memberi tanda bahwa ada sesuatu yang tidak biasa.", claim_refs: [C-krak-activity-may]}
+      - role: conflict
+        visual_direction: "Garis pantai Banten dan Lampung; gelombang besar dalam ilustrasi."
+        lines:
+          - {text: "Namun ancaman terbesar hari itu tidak datang dari langit.", claim_refs: [C-krak-tsunami]}
+          - {text: "Letusan memicu tsunami yang menyapu pesisir Banten dan Lampung.", claim_refs: [C-krak-tsunami]}
+          - {text: "Lalu, berapa sebenarnya harga yang dibayar?", claim_refs: []}
+      - role: explanation
+        visual_direction: "Halaman arsip bergaya dokumen lama; angka korban ditampilkan tenang, tanpa efek dramatis."
+        lines:
+          - {text: "Catatan resmi menyebut lebih dari 36.000 orang tewas, sebagian besar karena tsunami.", claim_refs: [C-krak-deaths, C-krak-tsunami]}
+          - {text: "Sebagian tulisan populer menyebut angka yang jauh lebih besar, tetapi angka itu tidak didukung arsip resmi.", claim_refs: [C-krak-deaths-120k]}
+          - {text: "Perbedaan itu mengingatkan kita untuk selalu memeriksa dari mana sebuah angka berasal.", claim_refs: []}
+          - {text: "Di atmosfer, aerosol letusan membuat senja di banyak negara tampak merah menyala selama berbulan-bulan.", claim_refs: [C-krak-sunsets]}
+          - {text: "Di Eropa pun, senja merah itu ikut teramati.", claim_refs: [C-krak-sunsets]}
+          - {text: "Berita bencananya pun menyebar ke berbagai benua dalam hitungan jam, lewat jaringan telegraf.", claim_refs: [C-krak-telegraph]}
+      - role: closing
+        visual_direction: "Langit senja merah; siluet ruang galeri, lukisan tidak ditampilkan langsung."
+        lines:
+          - {text: "Sebagian peneliti menduga langit merah itulah yang mengilhami lukisan The Scream karya Edvard Munch.", claim_refs: [C-krak-scream]}
+          - {text: "Dugaan itu masih diperdebatkan.", claim_refs: [C-krak-scream]}
+          - {text: "Yang pasti, satu letusan di Selat Sunda pernah mengubah warna senja di banyak negara.", claim_refs: [C-krak-sunsets, C-krak-location]}
+    pronunciation_notes:
+      - {term: "Rodrigues", guide: "ro-DRI-ges"}
+      - {term: "Edvard Munch", guide: "ED-vard MUNK"}
+      - {term: "Krakatau", guide: "kra-ka-TAU"}
+
+  deep_files:
+    title: "Krakatau: Suara, Laut, dan Langit"
+    segments:
+      - role: hook
+        visual_direction: "Laut lepas saat fajar; peta Samudra Hindia dengan titik Pulau Rodrigues."
+        lines:
+          - {text: "Pada pagi 27 Agustus 1883, sebuah dentuman terdengar di Pulau Rodrigues, di tengah Samudra Hindia.", claim_refs: [C-krak-peak-date, C-krak-sound]}
+          - {text: "Sumber suaranya berjarak sekitar 4.800 kilometer.", claim_refs: [C-krak-sound]}
+          - {text: "Ini adalah kisah tentang suara itu, tentang laut yang datang sesudahnya, dan tentang langit yang berubah warna.", claim_refs: []}
+      - role: context
+        visual_direction: "Peta Selat Sunda yang perlahan diperbesar; ilustrasi gugusan pulau vulkanik."
+        lines:
+          - {text: "Suara itu datang dari Krakatau, gugusan pulau vulkanik di Selat Sunda, di antara Jawa dan Sumatra.", claim_refs: [C-krak-location]}
+          - {text: "Aktivitas Krakatau sudah meningkat sejak Mei 1883.", claim_refs: [C-krak-activity-may]}
+          - {text: "Selama berbulan-bulan, gunung itu memberi tanda bahwa ada sesuatu yang tidak biasa.", claim_refs: [C-krak-activity-may]}
+          - {text: "Puncaknya tiba pada 26 dan 27 Agustus, dengan ledakan terbesar pada pagi hari 27 Agustus.", claim_refs: [C-krak-peak-date]}
+      - role: conflict
+        visual_direction: "Garis pantai yang tenang; air laut surut dalam ilustrasi, tanpa korban digambarkan."
+        lines:
+          - {text: "Namun bagi warga pesisir, bahaya terbesar tidak datang dari abu atau batu.", claim_refs: [C-krak-tsunami]}
+          - {text: "Bahaya itu datang dari laut.", claim_refs: [C-krak-tsunami]}
+          - {text: "Letusan memicu tsunami yang menyapu pesisir Banten dan Lampung.", claim_refs: [C-krak-tsunami]}
+          - {text: "Di sinilah pertanyaan besarnya muncul: berapa banyak nyawa yang hilang, dan bagaimana kita tahu angkanya?", claim_refs: []}
+          - {text: "Pertanyaan itu penting, karena angka korban sering berubah setiap kali sebuah kisah diceritakan ulang.", claim_refs: []}
+      - role: explanation
+        visual_direction: "Halaman arsip bergaya dokumen lama, lalu peta dunia dengan garis telegraf dan langit senja."
+        lines:
+          - {text: "Laporan resmi pemerintah kolonial mencatat 36.417 korban jiwa.", claim_refs: [C-krak-deaths]}
+          - {text: "Artinya, lebih dari 36.000 orang tewas, sebagian besar karena tsunami.", claim_refs: [C-krak-deaths, C-krak-tsunami]}
+          - {text: "Di kemudian hari, sebagian tulisan populer menyebut angka di atas 120.000, tetapi angka itu tidak didukung arsip resmi.", claim_refs: [C-krak-deaths-120k]}
+          - {text: "Perbedaan ini mengingatkan kita untuk selalu memeriksa dari mana sebuah angka berasal.", claim_refs: []}
+          - {text: "Karena itu, dalam kisah ini kita berpegang pada catatan resmi.", claim_refs: [C-krak-deaths]}
+          - {text: "Letusan Krakatau juga meninggalkan jejak di udara.", claim_refs: [C-krak-sunsets]}
+          - {text: "Aerosol yang terlempar tinggi ke atmosfer membuat senja di banyak negara tampak merah menyala selama berbulan-bulan.", claim_refs: [C-krak-sunsets]}
+          - {text: "Di Eropa pun, senja merah itu ikut teramati.", claim_refs: [C-krak-sunsets]}
+          - {text: "Sementara itu, berita bencananya menyebar ke berbagai benua dalam hitungan jam lewat jaringan telegraf.", claim_refs: [C-krak-telegraph]}
+          - {text: "Dunia mengikuti kabar dari Selat Sunda nyaris seketika.", claim_refs: [C-krak-telegraph]}
+      - role: closing
+        visual_direction: "Langit senja merah; siluet ruang galeri, lukisan tidak ditampilkan langsung."
+        lines:
+          - {text: "Sebagian peneliti bahkan menduga langit merah itu mengilhami lukisan The Scream karya Edvard Munch.", claim_refs: [C-krak-scream]}
+          - {text: "Sejarawan seni lain menilai langit dalam lukisan itu lebih mungkin ekspresi artistik, sehingga dugaan ini masih diperdebatkan.", claim_refs: [C-krak-scream]}
+          - {text: "Yang pasti, Krakatau tidak hanya tercatat sebagai bencana di Selat Sunda.", claim_refs: [C-krak-location]}
+          - {text: "Ia tercatat sebagai peristiwa yang terdengar, terlihat, dan dikabarkan jauh melampaui tempat asalnya.", claim_refs: [C-krak-sound, C-krak-sunsets, C-krak-telegraph]}
+          - {text: "Lebih dari satu abad kemudian, kita masih bisa menelusuri jejaknya lewat arsip, catatan ilmiah, dan cerita yang diwariskan.", claim_refs: []}
+    pronunciation_notes:
+      - {term: "Rodrigues", guide: "ro-DRI-ges"}
+      - {term: "Edvard Munch", guide: "ED-vard MUNK"}
+      - {term: "Krakatau", guide: "kra-ka-TAU"}

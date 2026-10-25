@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from studio.infra.db import Database
-from studio.infra.jobs import Handler, Job, JobOutcome, JobQueue
+from studio.infra.jobs import Handler, Job, JobOutcome, JobQueue, Lease
 from studio.modules.approvals import (
     Approval,
     ApprovalExpiredError,
@@ -39,8 +39,18 @@ from studio.modules.budget import (
     SpendRequest,
     estimate,
 )
-from studio.modules.episodes import Category, Episode, EpisodeService, EpisodeStatus, Trigger, state
+from studio.modules.episodes import (
+    Category,
+    DocumentaryFormat,
+    Episode,
+    EpisodeService,
+    EpisodeStatus,
+    Trigger,
+    state,
+)
+from studio.modules.scripting import ScriptingConfig
 from studio.modules.workflow.placeholders import PLACEHOLDER_STAGES
+from studio.modules.workflow.stages import ContentStages, StageOutput, StageRun
 from studio.shared.actors import Actor, ActorKind, OwnerPolicy
 from studio.shared.errors import NotAuthorizedError, NotFoundError, StudioError
 from studio.shared.gates import Gate
@@ -53,6 +63,7 @@ GATE_SUBJECT: Mapping[Gate, tuple[ArtifactKind, ...]] = {
         ArtifactKind.RESEARCH,
         ArtifactKind.FACTCHECK,
         ArtifactKind.SCRIPT,
+        ArtifactKind.EDITORIAL_REPORT,
         ArtifactKind.STORYBOARD,
     ),
     Gate.COST: (ArtifactKind.SCRIPT, ArtifactKind.STORYBOARD, ArtifactKind.COST_ESTIMATE),
@@ -138,7 +149,7 @@ class _Stage:
 
 
 class WorkflowService:
-    # Fase 1: semua provider adalah mock, jadi semua belanja bermode simulasi.
+    # Placeholder Fase 1 (estimasi s/d ekspor) memakai mock, jadi belanjanya bermode simulasi.
     MODE = Mode.SIMULATED
 
     def __init__(
@@ -155,6 +166,8 @@ class WorkflowService:
         queue: JobQueue,
         pricing: PricingTable,
         plan: BudgetPlan,
+        stages: ContentStages,
+        scripting: ScriptingConfig,
     ) -> None:
         self._db = db
         self._audit = audit
@@ -167,6 +180,15 @@ class WorkflowService:
         self._queue = queue
         self._pricing = pricing
         self._plan = plan
+        self._stages = stages
+        self._scripting = scripting
+        # Tahap yang memanggil provider: dijalankan di luar transaksi (TD-01).
+        self._external = {
+            EpisodeStatus.DISCOVERING: stages.discover,
+            EpisodeStatus.RESEARCHING: stages.research,
+            EpisodeStatus.FACT_CHECKING: stages.fact_check,
+            EpisodeStatus.SCRIPTING: stages.script,
+        }
 
     # --- perintah ----------------------------------------------------------
 
@@ -176,11 +198,28 @@ class WorkflowService:
         raise NotAuthorizedError(f"{actor.label} tidak berhak '{action}'")
 
     def create_episode(
-        self, *, category: Category, target_duration_s: int, idea: str | None, actor: Actor
+        self,
+        *,
+        category: Category,
+        target_duration_s: int | None,
+        idea: str | None,
+        actor: Actor,
+        format: DocumentaryFormat | None = None,
     ) -> Episode:
         self._require_owner_or_director(actor, "membuat episode")
+        if format is not None:
+            spec = self._scripting.format_spec(format.value)
+            duration = spec.default_s if target_duration_s is None else target_duration_s
+            if not spec.contains(duration):
+                raise WorkflowError(
+                    f"durasi {duration}s di luar rentang {spec.label} ({spec.min_s}–{spec.max_s}s)"
+                )
+        elif target_duration_s is None:
+            raise WorkflowError("isi durasi atau format episode")
+        else:
+            duration = target_duration_s
         return self._episodes.create(
-            category=category, target_duration_s=target_duration_s, idea=idea, actor=actor
+            category=category, target_duration_s=duration, idea=idea, actor=actor, format=format
         )
 
     def start(self, episode_id: str, actor: Actor) -> Episode:
@@ -298,6 +337,56 @@ class WorkflowService:
             self._queue.cancel_for_episode(episode_id)
         return updated
 
+    def override_editorial(self, episode_id: str, actor: Actor, reason: str) -> Episode:
+        """Owner secara eksplisit melanjutkan naskah yang gagal editorial gate ke G1.
+
+        Tercatat sebagai artefak + audit, dan ikut menjadi subjek approval G1 sehingga terlihat
+        di kartu persetujuan. AI tidak bisa memanggil ini (hanya owner di allowlist).
+        """
+        self._owners.require_owner(actor, "override editorial gate")
+        if len(reason.strip()) < 10:
+            raise WorkflowError("alasan override wajib diisi (minimal 10 karakter)")
+        with self._db.transaction():
+            episode = self._episodes.get(episode_id)
+            if episode.status is not EpisodeStatus.FAILED or (
+                episode.failed_from is not EpisodeStatus.SCRIPTING
+            ):
+                raise WorkflowError("override hanya untuk episode yang gagal di tahap SCRIPTING")
+            report = self._latest(episode, ArtifactKind.EDITORIAL_REPORT)
+            if report.content.get("passed") or report.content.get("overridden"):
+                raise WorkflowError("laporan editorial terakhir tidak membutuhkan override")
+            self._artifacts.put(
+                episode.id,
+                ArtifactKind.EDITORIAL_OVERRIDE,
+                {
+                    "report_version": report.version,
+                    "report_hash": report.content_hash,
+                    "blocking_codes": sorted(
+                        {i["code"] for i in report.content["issues"] if i["severity"] == "blocking"}
+                    ),
+                    "reason": reason.strip(),
+                    "by": actor.label,
+                },
+                actor,
+            )
+            self._audit.record(
+                actor=actor,
+                action="editorial.override",
+                entity_type="episode",
+                entity_id=episode.id,
+                episode_id=episode.id,
+                data={"report_version": report.version, "reason": reason.strip()},
+            )
+            updated = self._episodes.transition(
+                episode.id,
+                trigger=Trigger.RETRY,
+                target=EpisodeStatus.SCRIPTING,
+                actor=actor,
+                expected_version=episode.version,
+            )
+            self._enqueue_stage(updated, extra={"editorial_override": True})
+        return updated
+
     def retry(self, episode_id: str, actor: Actor) -> Episode:
         self._owners.require_owner(actor, "mengulang tahap yang gagal")
         with self._db.transaction():
@@ -319,29 +408,74 @@ class WorkflowService:
     def handlers(self) -> dict[str, Handler]:
         return {STAGE_JOB: self.handle_stage_job}
 
-    def handle_stage_job(self, job: Job) -> JobOutcome:
-        payload = job.payload
-        episode = self._episodes.get(payload["episode_id"])
-        if (
-            episode.status.value != payload["expected_status"]
-            or episode.version != payload["expected_version"]
-        ):
-            self._audit.record(
+    def _is_current(self, job: Job, episode: Episode) -> bool:
+        return bool(
+            episode.status.value == job.payload["expected_status"]
+            and episode.version == job.payload["expected_version"]
+        )
+
+    def _obsolete(self, job: Job, episode: Episode) -> JobOutcome:
+        self._audit.record(
+            actor=_SYSTEM,
+            action="job.obsolete",
+            entity_type="job",
+            entity_id=job.id,
+            episode_id=episode.id,
+            data={
+                "expected_status": job.payload["expected_status"],
+                "expected_version": job.payload["expected_version"],
+                "actual_status": episode.status.value,
+                "actual_version": episode.version,
+            },
+        )
+        return JobOutcome.OBSOLETE
+
+    def handle_stage_job(self, job: Job, lease: Lease) -> JobOutcome:
+        """Eksekusi dua fase (TD-01).
+
+        Tahap konten berjalan di luar transaksi (panggilan provider termeter). Hasilnya hanya
+        diterima di `lease.finish`, yang memvalidasi ulang versi episode dan fencing token.
+        """
+        episode = self._episodes.get(job.payload["episode_id"])
+        if not self._is_current(job, episode):
+            return lease.finish(lambda: self._obsolete(job, episode))
+        stage = self._external.get(episode.status)
+        if stage is None:
+            return lease.finish(lambda: self._run_placeholder(job))
+        output = stage(StageRun(job, lease, episode, job.payload.get("notes"), job.payload))
+        return lease.finish(lambda: self._accept(job, output))
+
+    def _accept(self, job: Job, output: StageOutput) -> JobOutcome:
+        episode = self._episodes.get(job.payload["episode_id"])
+        if not self._is_current(job, episode):
+            # Episode berubah selama kerja eksternal (revisi/batal): hasil tidak diterima.
+            # Biaya panggilan tetap tercatat jujur di ledger & provider_calls.
+            return self._obsolete(job, episode)
+        for kind, content in output.artifacts:
+            self._artifacts.put(episode.id, kind, content, _SYSTEM)
+        if output.fail_reason is not None:
+            self._episodes.transition(
+                episode.id,
+                trigger=Trigger.FAIL,
+                target=EpisodeStatus.FAILED,
                 actor=_SYSTEM,
-                action="job.obsolete",
-                entity_type="job",
-                entity_id=job.id,
-                episode_id=episode.id,
-                data={
-                    "expected_status": payload["expected_status"],
-                    "actual_status": episode.status.value,
-                },
+                expected_version=episode.version,
+                reason=output.fail_reason,
             )
-            return JobOutcome.OBSOLETE
+            return JobOutcome.DONE
+        self._advance(episode)
+        return JobOutcome.DONE
 
+    def _run_placeholder(self, job: Job) -> JobOutcome:
+        episode = self._episodes.get(job.payload["episode_id"])
+        if not self._is_current(job, episode):
+            return self._obsolete(job, episode)
         stage = PLACEHOLDER_STAGES[episode.status]
-        stage(_Stage(self, episode, job, payload.get("notes")))
+        stage(_Stage(self, episode, job, job.payload.get("notes")))
+        self._advance(episode)
+        return JobOutcome.DONE
 
+    def _advance(self, episode: Episode) -> None:
         next_status = state.NEXT_ON_COMPLETE[episode.status]
         updated = self._episodes.transition(
             episode.id,
@@ -354,7 +488,6 @@ class WorkflowService:
             self._request_gate(updated)
         elif next_status in state.WORKING:
             self._enqueue_stage(updated)
-        return JobOutcome.DONE
 
     def on_job_dead(self, job: Job, error: str) -> None:
         """Job gagal permanen → episode FAILED (kalau job itu masih relevan).
@@ -391,11 +524,14 @@ class WorkflowService:
 
     # --- internal ----------------------------------------------------------
 
-    def _enqueue_stage(self, episode: Episode, notes: str | None = None) -> Job:
+    def _enqueue_stage(
+        self, episode: Episode, notes: str | None = None, extra: dict[str, Any] | None = None
+    ) -> Job:
         payload: dict[str, Any] = {
             "episode_id": episode.id,
             "expected_status": episode.status.value,
             "expected_version": episode.version,
+            **(extra or {}),
         }
         if notes:
             payload["notes"] = notes
@@ -418,6 +554,14 @@ class WorkflowService:
             for kind in GATE_SUBJECT[gate]
             for a in [self._latest(episode, kind)]
         }
+        if gate is Gate.EDITORIAL:
+            report = self._latest(episode, ArtifactKind.EDITORIAL_REPORT)
+            if report.content.get("overridden"):
+                override = self._latest(episode, ArtifactKind.EDITORIAL_OVERRIDE)
+                subject[ArtifactKind.EDITORIAL_OVERRIDE.value] = {
+                    "version": override.version,
+                    "hash": override.content_hash,
+                }
         cap: int | None = None
         if gate is Gate.TOPIC:
             cap = self._plan.limits.preproduction_cap_idr

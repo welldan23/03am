@@ -6,7 +6,15 @@ import pytest
 
 from studio.bootstrap import App
 from studio.infra.db import Database
-from studio.infra.jobs import Job, JobOutcome, JobQueue, JobStatus, LeaseLostError, Worker
+from studio.infra.jobs import (
+    Job,
+    JobOutcome,
+    JobQueue,
+    JobStatus,
+    LeaseLostError,
+    Worker,
+    atomic,
+)
 from studio.shared.clock import FakeClock
 from studio.shared.errors import NonRetryableError
 from tests.conftest import OWNER
@@ -29,7 +37,7 @@ def _worker(app: App, queue: JobQueue, handler, dead: list[tuple[str, str]], wid
     return Worker(
         app.db,
         queue,
-        {"t": handler},
+        {"t": atomic(handler)},
         worker_id=wid,
         lease_seconds=LEASE,
         on_dead=lambda job, err: dead.append((job.id, err)),
@@ -303,7 +311,9 @@ def test_dead_letter_hook_is_atomic_with_job_failure(
     def broken(job: Job) -> JobOutcome:
         raise NonRetryableError("gagal permanen")
 
-    worker = Worker(app.db, queue, {"t": broken}, worker_id="w1", lease_seconds=LEASE, on_dead=hook)
+    worker = Worker(
+        app.db, queue, {"t": atomic(broken)}, worker_id="w1", lease_seconds=LEASE, on_dead=hook
+    )
     job = queue.enqueue("t", {}, idempotency_key="k", max_attempts=2)
     with pytest.raises(RuntimeError, match="sibuk"):
         worker.run_once()

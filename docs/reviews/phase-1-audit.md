@@ -148,6 +148,8 @@ Aturan yang dipakai: sebuah AC hanya dianggap terpenuhi kalau **perilakunya dibu
 | TD-12 | Info | `mypy` hanya dijalankan untuk `src/`, tidak untuk `tests/`. Branch default GitHub masih `claude/planning-docs`. | Keputusan owner |
 | TD-13 | Rendah | CI memakai `actions/checkout@v4` dan `astral-sh/setup-uv@v6` yang menargetkan Node.js 20 (deprecated; GitHub memaksanya jalan di Node 24). Perlu dinaikkan ke major terbaru setelah versinya diverifikasi. | Sebelum Fase 2 / kapan saja |
 
+> **Pembaruan Fase 2 (2026-10-25):** TD-01 **selesai** (eksekusi dua fase, [ADR-0011](../adr/0011-eksekusi-job-dua-fase.md)). TD-02 sebagian: `Lease.heartbeat()` sudah ada dan dipanggil di antara langkah, tapi belum dari dalam satu panggilan provider yang panjang. TD-06 **selesai**: penolakan budget kini tercatat sebagai `budget.denied` karena reservasi punya transaksinya sendiri. Status lengkap ada di [laporan Fase 2](phase-2-implementation.md).
+
 ## 7. GitHub Actions
 
 Diverifikasi lewat GitHub API setelah push (bukan diasumsikan):

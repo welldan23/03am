@@ -9,6 +9,7 @@ from studio.modules.episodes.models import (
     MAX_DURATION_S,
     MIN_DURATION_S,
     Category,
+    DocumentaryFormat,
     Episode,
     EpisodeStatus,
     Trigger,
@@ -26,7 +27,13 @@ class EpisodeService:
         self._audit = audit
 
     def create(
-        self, *, category: Category, target_duration_s: int, idea: str | None, actor: Actor
+        self,
+        *,
+        category: Category,
+        target_duration_s: int,
+        idea: str | None,
+        actor: Actor,
+        format: DocumentaryFormat | None = None,
     ) -> Episode:
         if not MIN_DURATION_S <= target_duration_s <= MAX_DURATION_S:
             raise ValueError(f"durasi harus {MIN_DURATION_S}–{MAX_DURATION_S} detik")
@@ -34,12 +41,13 @@ class EpisodeService:
         now = to_iso(self._clock.now())
         with self._db.transaction():
             self._db.execute(
-                "INSERT INTO episodes (id, category, target_duration_s, idea, status, version,"
-                " created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)",
+                "INSERT INTO episodes (id, category, target_duration_s, format, idea, status,"
+                " version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)",
                 (
                     episode_id,
                     category.value,
                     target_duration_s,
+                    format.value if format else None,
                     idea,
                     EpisodeStatus.DRAFT.value,
                     now,
@@ -52,7 +60,11 @@ class EpisodeService:
                 entity_type="episode",
                 entity_id=episode_id,
                 episode_id=episode_id,
-                data={"category": category.value, "target_duration_s": target_duration_s},
+                data={
+                    "category": category.value,
+                    "target_duration_s": target_duration_s,
+                    "format": format.value if format else None,
+                },
             )
         return self.get(episode_id)
 

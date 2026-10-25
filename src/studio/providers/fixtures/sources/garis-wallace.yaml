@@ -1,0 +1,54 @@
+# FIXTURE UJI — bukan rujukan nyata. Penerbit fiktif, URL memakai domain .invalid.
+topic_key: garis-wallace
+documents:
+  - id: WAL-S1
+    title: "Batas Biogeografi di Kepulauan Nusantara"
+    publisher: "Jurnal Biogeografi (FIXTURE)"
+    url: "https://fixture.03am.invalid/biogeografi/batas-nusantara"
+    source_type: academic
+    published_date: 2015-07-01
+    authors: ["Tim Penulis (FIXTURE)"]
+    origin: jurnal-biogeografi
+    text: >-
+      Garis Wallace adalah batas biogeografi yang memisahkan fauna khas Asia di sebelah barat
+      dari fauna khas Australasia di sebelah timur. Di bagian selatan, garis ini melintas di
+      antara Bali dan Lombok. Banyak peneliti kini memandang kawasan di antara kedua kelompok
+      fauna itu sebagai zona peralihan yang disebut Wallacea, bukan sebagai satu garis tegas.
+
+  - id: WAL-S2
+    title: "Alfred Russel Wallace di Kepulauan Melayu"
+    publisher: "Museum Sejarah Alam (FIXTURE)"
+    url: "https://fixture.03am.invalid/museum-alam/wallace-kepulauan-melayu"
+    source_type: museum
+    published_date: 2013-11-07
+    authors: ["Tim Kurator (FIXTURE)"]
+    origin: museum-alam
+    text: >-
+      Alfred Russel Wallace menjelajahi Kepulauan Melayu antara 1854 dan 1862. Dari
+      pengamatannya, ia mencatat perbedaan tajam antara hewan di Bali dan di Lombok, meskipun
+      kedua pulau itu hanya dipisahkan selat yang sempit.
+
+  - id: WAL-S3
+    title: "Selat Lombok dan Sejarah Muka Laut"
+    publisher: "Pusat Oseanografi (FIXTURE)"
+    url: "https://fixture.03am.invalid/oseanografi/selat-lombok"
+    source_type: scientific_institution
+    published_date: 2020-05-01
+    authors: ["Tim Peneliti (FIXTURE)"]
+    origin: pusat-oseanografi
+    text: >-
+      Selat Lombok cukup dalam sehingga tetap menjadi lautan bahkan ketika muka laut turun
+      pada zaman es. Karena itu, hewan darat dari Asia dan Australasia tidak pernah terhubung
+      oleh jembatan darat di titik ini.
+
+  - id: WAL-S4
+    title: "Garis Tak Kasatmata di antara Bali dan Lombok"
+    publisher: "Majalah Alam (FIXTURE)"
+    url: "https://fixture.03am.invalid/majalah-alam/garis-tak-kasatmata"
+    source_type: media
+    published_date: 2021-03-01
+    authors: ["Redaksi (FIXTURE)"]
+    origin: majalah-alam
+    text: >-
+      Garis Wallace melintas di antara Bali dan Lombok. Nama garis itu diberikan oleh Thomas
+      Henry Huxley pada tahun 1868.

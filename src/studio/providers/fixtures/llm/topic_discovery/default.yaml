@@ -1,0 +1,58 @@
+# FIXTURE UJI: respons mock untuk task topic_discovery (bukan keluaran model sungguhan).
+response:
+  candidates:
+    - key: krakatau-1883
+      title: "Dentuman Krakatau 1883"
+      topic_category: fenomena_alam
+      angle: "Satu letusan di Selat Sunda yang terdengar ribuan kilometer jauhnya dan mengubah warna langit dunia."
+      hook_question: "Bagaimana satu gunung di Selat Sunda bisa terdengar sampai tengah Samudra Hindia?"
+      why_interesting: "Bencana besar dengan arsip yang relatif lengkap, ditambah perdebatan menarik soal lukisan The Scream."
+      sensitivity: rendah
+      sensitivity_reason: "Bencana alam historis; korban jiwa disampaikan dengan hormat dan sesuai arsip."
+      verifiability: tinggi
+      suggested_format: archives
+      search_terms: ["Krakatau letusan 1883", "tsunami Banten Lampung", "senja merah Krakatau"]
+    - key: voynich-manuscript
+      title: "Naskah Voynich: Buku yang Belum Bisa Dibaca"
+      topic_category: misteri_sejarah
+      angle: "Sebuah naskah abad ke-15 yang aksaranya belum terpecahkan hingga kini."
+      hook_question: "Apa yang kita ketahui pasti tentang naskah yang tak seorang pun bisa baca?"
+      why_interesting: "Misteri yang bisa dibahas dengan disiplin: memisahkan fakta, penanggalan, dan klaim pemecahan."
+      sensitivity: rendah
+      sensitivity_reason: "Tidak menyangkut isu sensitif; rawan klaim sensasional yang harus disaring."
+      verifiability: sedang
+      suggested_format: archives
+      search_terms: ["Naskah Voynich", "radiokarbon vellum Voynich", "teks Voynich"]
+    - key: garis-wallace
+      title: "Garis Tak Kasatmata di antara Bali dan Lombok"
+      topic_category: geografi
+      angle: "Batas biogeografi yang memisahkan fauna Asia dan Australasia di selat yang sempit."
+      hook_question: "Mengapa hewan di dua pulau bertetangga bisa begitu berbeda?"
+      why_interesting: "Sains yang dekat dengan geografi Indonesia dan mudah divisualkan."
+      sensitivity: rendah
+      sensitivity_reason: "Topik sains umum."
+      verifiability: tinggi
+      suggested_format: quick_files
+      search_terms: ["Garis Wallace", "Selat Lombok", "Wallacea"]
+    - key: jalur-rempah-banda
+      title: "Banda dan Perebutan Pala"
+      topic_category: sejarah_dunia
+      angle: "Bagaimana pulau-pulau kecil menjadi pusat perdagangan rempah dunia."
+      hook_question: "Mengapa segenggam pala pernah lebih berharga dari emas?"
+      why_interesting: "Sejarah global yang berakar di Nusantara."
+      sensitivity: sedang
+      sensitivity_reason: "Menyangkut kekerasan kolonial; perlu kehati-hatian dan sumber primer."
+      verifiability: sedang
+      suggested_format: deep_files
+      search_terms: ["Banda pala sejarah"]
+    - key: perbatasan-laut-natuna
+      title: "Garis Laut di Natuna"
+      topic_category: geopolitik
+      angle: "Klaim wilayah laut dan hukum laut internasional."
+      hook_question: "Siapa yang menentukan di mana laut sebuah negara berakhir?"
+      why_interesting: "Relevan dengan isu kedaulatan."
+      sensitivity: tinggi
+      sensitivity_reason: "Isu geopolitik aktif; wajib catatan editorial dan sumber resmi."
+      verifiability: sedang
+      suggested_format: archives
+      search_terms: ["Natuna ZEE"]

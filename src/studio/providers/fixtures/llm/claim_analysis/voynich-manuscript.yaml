@@ -1,0 +1,41 @@
+# FIXTURE UJI: analisis klaim mock.
+response:
+  claims:
+    - key: voy-ms408
+      statement: "Naskah Voynich disimpan dengan nomor katalog MS 408 di Perpustakaan Beinecke, Universitas Yale."
+      assertion_type: fact
+      importance: supporting
+      evidence_ids: [E-VOY-S1-1]
+    - key: voy-voynich-1912
+      statement: "Naskah itu dinamai menurut Wilfrid Voynich, pedagang buku yang memperolehnya pada tahun 1912."
+      assertion_type: fact
+      importance: critical
+      event_date: "1912"
+      evidence_ids: [E-VOY-S1-2, E-VOY-S3-1]
+    - key: voy-radiocarbon
+      statement: "Uji radiokarbon menempatkan vellum naskah pada awal abad ke-15, dengan rentang 1404 hingga 1438."
+      assertion_type: fact
+      importance: critical
+      evidence_ids: [E-VOY-S2-1, E-VOY-S3-2]
+    - key: voy-vellum-caveat
+      statement: "Penanggalan radiokarbon berlaku untuk bahan vellum, bukan untuk waktu penulisan teks secara pasti."
+      assertion_type: fact
+      importance: supporting
+      evidence_ids: [E-VOY-S2-2]
+    - key: voy-undeciphered
+      statement: "Hingga kini teks naskah Voynich belum berhasil dibaca."
+      assertion_type: fact
+      importance: critical
+      evidence_ids: [E-VOY-S1-3, E-VOY-S3-4]
+      conflicts_with: [voy-solved]
+    - key: voy-natural-language
+      statement: "Pola statistik teks Voynich menyerupai sebagian ciri bahasa alami, sehingga teks itu kemungkinan tidak sepenuhnya acak."
+      assertion_type: interpretation
+      importance: supporting
+      evidence_ids: [E-VOY-S4-1, E-VOY-S4-2]
+    - key: voy-solved
+      statement: "Naskah Voynich telah dipecahkan dan berisi resep ramuan rahasia."
+      assertion_type: fact
+      importance: critical
+      evidence_ids: [E-VOY-S5-1, E-VOY-S3-3]
+      conflicts_with: [voy-undeciphered]

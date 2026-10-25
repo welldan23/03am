@@ -1,0 +1,39 @@
+# FIXTURE UJI: naskah mock.
+responses:
+  archives:
+    title: "Buku yang Belum Bisa Dibaca"
+    segments:
+      - role: hook
+        visual_direction: "Close-up halaman bergambar tumbuhan dan aksara asing (ilustrasi, bukan foto arsip)."
+        lines:
+          - {text: "Ada sebuah buku yang bahannya diperkirakan berusia lebih dari enam abad, tetapi isinya belum bisa dibaca siapa pun.", claim_refs: [C-voy-radiocarbon, C-voy-undeciphered]}
+          - {text: "Dunia mengenalnya sebagai naskah Voynich.", claim_refs: [C-voy-voynich-1912]}
+      - role: context
+        visual_direction: "Rak arsip berpencahayaan redup; kartu katalog bertuliskan MS 408."
+        lines:
+          - {text: "Naskah ini kini disimpan dengan nomor katalog MS 408 di Perpustakaan Beinecke, Universitas Yale.", claim_refs: [C-voy-ms408]}
+          - {text: "Namanya diambil dari Wilfrid Voynich, pedagang buku yang memperolehnya pada tahun 1912.", claim_refs: [C-voy-voynich-1912]}
+          - {text: "Halaman-halamannya dipenuhi aksara yang hingga kini belum berhasil dibaca.", claim_refs: [C-voy-undeciphered]}
+      - role: conflict
+        visual_direction: "Aksara bergeser perlahan seperti teka-teki; suasana sunyi."
+        lines:
+          - {text: "Pertanyaannya sederhana, tetapi belum terjawab: apakah teks itu sebuah bahasa, sebuah sandi, atau sekadar rangkaian simbol?", claim_refs: []}
+          - {text: "Dan jika itu sebuah bahasa, bahasa apakah yang bisa bertahan tanpa satu pun pembaca?", claim_refs: []}
+      - role: explanation
+        visual_direction: "Ilustrasi laboratorium dan grafik sederhana; tidak ada wajah tokoh."
+        lines:
+          - {text: "Uji radiokarbon menempatkan bahan vellum naskah ini pada awal abad ke-15, antara 1404 dan 1438.", claim_refs: [C-voy-radiocarbon]}
+          - {text: "Namun penanggalan itu berlaku untuk bahannya, bukan untuk waktu penulisan teks secara pasti.", claim_refs: [C-voy-vellum-caveat]}
+          - {text: "Artinya, kita tahu kapan bahannya dibuat, tetapi belum tahu pasti kapan teksnya ditulis.", claim_refs: [C-voy-vellum-caveat]}
+          - {text: "Analisis statistik menunjukkan pola teksnya menyerupai sebagian ciri bahasa alami, sehingga teks itu kemungkinan tidak sepenuhnya acak.", claim_refs: [C-voy-natural-language]}
+          - {text: "Berbagai klaim pemecahan sudah bermunculan, tetapi belum ada yang diterima secara luas oleh para ahli.", claim_refs: [C-voy-solved]}
+      - role: closing
+        visual_direction: "Naskah tertutup di meja baca; cahaya perlahan meredup."
+        lines:
+          - {text: "Mungkin jawabannya masih tersimpan di halaman-halaman itu.", claim_refs: []}
+          - {text: "Selama belum ada bukti yang kuat, setiap klaim pemecahan perlu kita dengar dengan kepala dingin.", claim_refs: [C-voy-solved]}
+          - {text: "Sampai hari ini, naskah Voynich mengingatkan kita bahwa tidak semua pertanyaan sejarah bisa dijawab dengan cepat.", claim_refs: [C-voy-undeciphered]}
+    pronunciation_notes:
+      - {term: "Voynich", guide: "VOI-nik"}
+      - {term: "Beinecke", guide: "BAI-ne-ki"}
+      - {term: "vellum", guide: "VE-lum"}

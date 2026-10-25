@@ -12,5 +12,6 @@
 | 0008 | Antrean job di SQLite, bukan Redis/Celery | Diterima — ringkasan di ARCHITECTURE §13 |
 | [0009](0009-metering-token-llm.md) | Semua token LLM (termasuk Hermes) lewat gateway metering Studio | **Diterima** |
 | [0010](0010-rencana-anggaran-dan-otorisasi.md) | Rencana anggaran bulanan, kurs, dan otorisasi belanja | **Diterima** |
+| [0011](0011-eksekusi-job-dua-fase.md) | Eksekusi job dua fase & catatan panggilan provider (`provider_calls`) | **Diterima** |
 
 ADR yang masih berupa ringkasan akan ditulis lengkap kalau keputusannya perlu dibahas ulang.

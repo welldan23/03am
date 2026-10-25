@@ -1,0 +1,11 @@
+# FIXTURE UJI: rencana riset mock.
+response:
+  objective: "Menyusun kronologi dan dampak letusan Krakatau 1883 dari sumber yang dapat diverifikasi."
+  questions:
+    - {id: Q1, question: "Kapan puncak letusan terjadi?", priority: critical}
+    - {id: Q2, question: "Seberapa jauh dentumannya terdengar?", priority: critical}
+    - {id: Q3, question: "Berapa korban jiwa menurut catatan resmi, dan apa penyebab utamanya?", priority: critical}
+    - {id: Q4, question: "Apa dampak letusan terhadap atmosfer dan iklim?", priority: supporting}
+    - {id: Q5, question: "Seberapa kuat dugaan kaitan Krakatau dengan lukisan The Scream?", priority: supporting}
+  search_queries: ["Krakatau letusan 1883", "tsunami korban Krakatau", "senja merah Krakatau Scream", "suhu global Krakatau"]
+  out_of_scope: ["Letusan Anak Krakatau 2018"]

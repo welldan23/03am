@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 import yaml
 
-from studio.bootstrap import App, build_app
+from studio.bootstrap import App, LLMProviderFactory, build_app
 from studio.shared.actors import Actor
 from studio.shared.clock import FakeClock
 from studio.shared.config import Settings
@@ -40,8 +40,8 @@ def clock() -> FakeClock:
 def config_dir(tmp_path: Path) -> Path:
     target = tmp_path / "config"
     target.mkdir()
-    for name in ("budget.yaml", "pricing.yaml"):
-        shutil.copy(REPO_ROOT / "config" / name, target / name)
+    for path in sorted((REPO_ROOT / "config").glob("*.yaml")):
+        shutil.copy(path, target / path.name)
     return target
 
 
@@ -59,14 +59,24 @@ AppFactory = Callable[..., App]
 def make_app(tmp_path: Path, config_dir: Path, clock: FakeClock) -> Iterator[AppFactory]:
     apps: list[App] = []
 
-    def factory(**overrides: Any) -> App:
+    def factory(
+        *,
+        llm_provider_factory: LLMProviderFactory | None = None,
+        source_provider: Any = None,
+        **overrides: Any,
+    ) -> App:
         values: dict[str, Any] = {
             "data_dir": tmp_path / "data",
             "config_dir": config_dir,
             "owner_ids": "cli:owner",
         }
         values.update(overrides)
-        app = build_app(Settings(_env_file=None, **values), clock=clock)  # type: ignore[call-arg]
+        app = build_app(
+            Settings(_env_file=None, **values),  # type: ignore[call-arg]
+            clock=clock,
+            llm_provider_factory=llm_provider_factory,
+            source_provider=source_provider,
+        )
         apps.append(app)
         return app
 

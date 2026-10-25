@@ -1,0 +1,21 @@
+# FIXTURE UJI: ekstraksi bukti mock per sumber.
+responses:
+  WAL-S1:
+    evidence:
+      - {quote: "Garis Wallace adalah batas biogeografi yang memisahkan fauna khas Asia di sebelah barat dari fauna khas Australasia di sebelah timur.", stance: supports, claim_key: wal-definition}
+      - {quote: "Di bagian selatan, garis ini melintas di antara Bali dan Lombok.", stance: supports, claim_key: wal-bali-lombok}
+      - {quote: "Banyak peneliti kini memandang kawasan di antara kedua kelompok fauna itu sebagai zona peralihan yang disebut Wallacea, bukan sebagai satu garis tegas.", stance: supports, claim_key: wal-wallacea}
+  WAL-S2:
+    evidence:
+      - {quote: "Alfred Russel Wallace menjelajahi Kepulauan Melayu antara 1854 dan 1862.", stance: supports, claim_key: wal-explorer}
+      - {quote: "Dari pengamatannya, ia mencatat perbedaan tajam antara hewan di Bali dan di Lombok, meskipun kedua pulau itu hanya dipisahkan selat yang sempit.", stance: supports, claim_key: wal-contrast}
+  WAL-S3:
+    evidence:
+      - {quote: "Selat Lombok cukup dalam sehingga tetap menjadi lautan bahkan ketika muka laut turun pada zaman es.", stance: supports, claim_key: wal-strait}
+      - {quote: "Karena itu, hewan darat dari Asia dan Australasia tidak pernah terhubung oleh jembatan darat di titik ini.", stance: supports, claim_key: wal-strait}
+  WAL-S4:
+    evidence:
+      - {quote: "Garis Wallace melintas di antara Bali dan Lombok.", stance: supports, claim_key: wal-bali-lombok}
+      - {quote: "Nama garis itu diberikan oleh Thomas Henry Huxley pada tahun 1868.", stance: supports, claim_key: wal-huxley}
+  default:
+    evidence: []

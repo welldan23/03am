@@ -1,0 +1,32 @@
+# FIXTURE UJI: naskah mock.
+responses:
+  quick_files:
+    title: "Garis di antara Bali dan Lombok"
+    segments:
+      - role: hook
+        visual_direction: "Pemandangan udara Selat Lombok; dua pulau berhadapan."
+        lines:
+          - {text: "Bali dan Lombok hanya dipisahkan selat yang sempit.", claim_refs: [C-wal-contrast]}
+          - {text: "Namun hewan di kedua pulau itu seolah berasal dari dua dunia.", claim_refs: [C-wal-contrast, C-wal-definition]}
+      - role: context
+        visual_direction: "Ilustrasi buku catatan naturalis abad ke-19 dan peta lama Kepulauan Melayu."
+        lines:
+          - {text: "Antara 1854 dan 1862, naturalis Alfred Russel Wallace menjelajahi Kepulauan Melayu dan mencatat perbedaan tajam itu.", claim_refs: [C-wal-explorer, C-wal-contrast]}
+      - role: conflict
+        visual_direction: "Garis putus-putus muncul di atas peta laut."
+        lines:
+          - {text: "Mengapa batas sejelas itu bisa muncul di tengah lautan?", claim_refs: []}
+      - role: explanation
+        visual_direction: "Animasi muka laut turun; Selat Lombok tetap berair."
+        lines:
+          - {text: "Jawabannya ada di Selat Lombok.", claim_refs: [C-wal-strait]}
+          - {text: "Selat ini cukup dalam sehingga tetap menjadi lautan, bahkan ketika muka laut turun pada zaman es.", claim_refs: [C-wal-strait]}
+          - {text: "Hewan darat dari kedua sisi tidak pernah terhubung oleh jembatan darat di titik ini.", claim_refs: [C-wal-strait]}
+      - role: closing
+        visual_direction: "Peta kawasan Wallacea dengan gradasi warna, bukan satu garis."
+        lines:
+          - {text: "Kini banyak peneliti memandang wilayah itu sebagai zona peralihan bernama Wallacea, bukan satu garis tegas.", claim_refs: [C-wal-wallacea]}
+          - {text: "Laut sempit pun bisa memisahkan sejarah kehidupan.", claim_refs: []}
+    pronunciation_notes:
+      - {term: "Alfred Russel Wallace", guide: "AL-fred RA-sel WO-les"}
+      - {term: "Wallacea", guide: "wo-LE-sia"}

@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from studio.bootstrap import App
-from studio.infra.jobs import Job, JobOutcome, JobStatus, Worker
+from studio.infra.jobs import Job, JobOutcome, JobStatus, Lease, Worker
 from studio.modules.approvals import (
     ApprovalExpiredError,
     ApprovalStatus,
@@ -14,7 +14,8 @@ from studio.modules.approvals import (
 from studio.modules.artifacts import ArtifactKind
 from studio.modules.budget import AuthorizationKind, BudgetExceededError, Mode
 from studio.modules.episodes import EpisodeStatus as S
-from studio.modules.workflow import STAGE_JOB, WorkflowError, placeholders
+from studio.modules.workflow import STAGE_JOB, WorkflowError
+from studio.providers.llm.mock import MockLLMProvider
 from studio.shared.clock import FakeClock
 from studio.shared.errors import NotAuthorizedError
 from studio.shared.gates import Gate
@@ -27,7 +28,7 @@ def test_full_flow_to_exported_with_simulated_costs_only(active_app: App) -> Non
     episode = new_started_episode(app, duration=60)
     final = drive_to(app, episode.id, S.EXPORTED)
 
-    assert final.title == "[PLACEHOLDER] Topik sejarah #1"
+    assert final.title == "Dentuman Krakatau 1883"
     statuses = [
         e.data["to"] for e in app.audit.entries(episode_id=episode.id, action="episode.transition")
     ]
@@ -194,30 +195,41 @@ def test_cost_approval_refused_when_budget_insufficient(
 
 
 def test_crash_mid_stage_has_no_double_effects(active_app: App, clock: FakeClock) -> None:
+    """Crash SETELAH provider dibayar tetapi SEBELUM hasil tahap diterima (TD-01).
+
+    Biaya panggilan tetap tercatat jujur (uang sudah keluar), hasil tahap tidak tercatat, dan
+    recovery memakai ulang respons tersimpan — tidak membayar dua kali.
+    """
     app = active_app
     episode = new_started_episode(app)
 
-    def crash_after_work(job: Job) -> JobOutcome:
-        app.workflow.handle_stage_job(job)  # artefak + ledger + transisi + job berikutnya
-        raise KeyboardInterrupt  # proses mati sebelum commit
+    def crash_before_accept(job: Job, lease: Lease) -> JobOutcome:
+        def die(work: object) -> JobOutcome:
+            raise KeyboardInterrupt  # proses mati sebelum transaksi penerimaan hasil
+
+        lease.finish = die  # type: ignore[method-assign]
+        return app.workflow.handle_stage_job(job, lease)
 
     crashing = Worker(
         app.db,
         app.queue,
-        {STAGE_JOB: crash_after_work},
+        {STAGE_JOB: crash_before_accept},
         worker_id="w1",
         lease_seconds=app.settings.worker_lease_seconds,
     )
     with pytest.raises(KeyboardInterrupt):
         crashing.run_once()
     assert app.artifacts.latest(episode.id, ArtifactKind.TOPICS) is None
-    assert app.budget.ledger(episode_id=episode.id) == []
     assert app.episodes.get(episode.id).status is S.DISCOVERING
+    (paid,) = app.budget.ledger(episode_id=episode.id)  # biaya panggilan tercatat apa adanya
+    assert paid.status.value == "committed"
 
     clock.advance(timedelta(seconds=app.settings.worker_lease_seconds + 1))
     run_worker(app, "w2")
     assert len(app.artifacts.versions(episode.id, ArtifactKind.TOPICS)) == 1
-    assert len(app.budget.ledger(episode_id=episode.id)) == 1
+    assert app.budget.ledger(episode_id=episode.id) == [paid]  # tidak ada biaya kedua
+    assert len(app.calls.calls_for_episode(episode.id)) == 1
+    assert app.audit.entries(episode_id=episode.id, action="provider_call.reused")
     assert app.episodes.get(episode.id).status is S.AWAITING_TOPIC
     (job,) = app.queue.list_jobs(episode_id=episode.id)
     assert job.status is JobStatus.SUCCEEDED and job.attempts == 2
@@ -247,14 +259,22 @@ def test_budget_denial_fails_episode_without_retry(make_app: AppFactory, config_
     run_worker(app)
     failed = app.episodes.get(episode.id)
     assert failed.status is S.FAILED
-    assert failed.failed_from is S.FACT_CHECKING
+    assert failed.failed_from is S.RESEARCHING
     assert failed.failure_reason is not None and "batas otorisasi" in failed.failure_reason
     jobs = app.queue.list_jobs(episode_id=episode.id, status=JobStatus.FAILED)
     assert len(jobs) == 1 and jobs[0].attempts == 1
-    # Penolakan di dalam handler di-rollback bersama handler, tapi alasannya tetap tercatat.
     (dead,) = app.audit.entries(episode_id=episode.id, action="job.dead")
     assert "BudgetExceededError" in dead.data["error"]
     assert "batas otorisasi" in dead.data["error"]
+    # Sejak TD-01 reservasi berjalan di transaksinya sendiri → penolakan tercatat langsung.
+    denied = app.audit.entries(episode_id=episode.id, action="budget.denied")
+    assert denied and "batas otorisasi" in denied[-1].data["reason"]
+    spent = sum(
+        e.actual_idr or 0
+        for e in app.budget.ledger(episode_id=episode.id)
+        if e.purpose != "topic_discovery"
+    )
+    assert spent <= 100  # batas pra-produksi tidak pernah terlampaui
 
 
 def test_no_active_period_blocks_discovery(app: App) -> None:
@@ -265,26 +285,27 @@ def test_no_active_period_blocks_discovery(app: App) -> None:
     assert "otorisasi operational" in (failed.failure_reason or "")
 
 
-def test_transient_failures_then_owner_retry(
-    active_app: App, clock: FakeClock, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    def broken(ctx: placeholders.StageContext) -> None:
-        raise RuntimeError("provider mock sedang error")
-
-    monkeypatch.setitem(placeholders.PLACEHOLDER_STAGES, S.DISCOVERING, broken)  # type: ignore[index]
-    episode = new_started_episode(active_app)
+def test_transient_failures_then_owner_retry(make_app: AppFactory, clock: FakeClock) -> None:
+    """Provider tidak tersedia 3× (tidak tertagih) → FAILED; owner retry → lanjut."""
+    app = make_app(
+        llm_provider_factory=lambda tickets: MockLLMProvider(
+            tickets, faults={"topic_discovery": ["unavailable"] * 3}
+        )
+    )
+    app.budget.activate_period(OWNER)
+    episode = new_started_episode(app)
     for _ in range(3):
-        run_worker(active_app)
+        run_worker(app)
         clock.advance(timedelta(minutes=1))
-    failed = active_app.episodes.get(episode.id)
+    failed = app.episodes.get(episode.id)
     assert failed.status is S.FAILED and failed.failed_from is S.DISCOVERING
+    assert all(e.status.value == "released" for e in app.budget.ledger(episode_id=episode.id))
 
-    monkeypatch.undo()
     with pytest.raises(NotAuthorizedError):
-        active_app.workflow.retry(episode.id, DIRECTOR)
-    assert active_app.workflow.retry(episode.id, OWNER).status is S.DISCOVERING
-    run_worker(active_app)
-    assert active_app.episodes.get(episode.id).status is S.AWAITING_TOPIC
+        app.workflow.retry(episode.id, DIRECTOR)
+    assert app.workflow.retry(episode.id, OWNER).status is S.DISCOVERING
+    run_worker(app)
+    assert app.episodes.get(episode.id).status is S.AWAITING_TOPIC
 
 
 def test_reject_closes_episode_and_revokes_spending(active_app: App) -> None:

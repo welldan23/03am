@@ -1,0 +1,67 @@
+# FIXTURE UJI — bukan rujukan nyata. Penerbit fiktif, URL memakai domain .invalid.
+topic_key: voynich-manuscript
+documents:
+  - id: VOY-S1
+    title: "Katalog Naskah: MS 408"
+    publisher: "Perpustakaan Naskah Langka (FIXTURE)"
+    url: "https://fixture.03am.invalid/katalog/ms-408"
+    source_type: archive
+    published_date: 2016-03-01
+    authors: ["Bagian Katalog (FIXTURE)"]
+    origin: katalog-naskah
+    text: >-
+      Naskah Voynich disimpan dengan nomor katalog MS 408 di Perpustakaan Naskah Langka dan
+      Manuskrip Beinecke, Universitas Yale. Naskah ini dinamai menurut Wilfrid Voynich,
+      pedagang buku yang memperolehnya pada tahun 1912. Teksnya ditulis dengan aksara yang
+      hingga kini belum berhasil dibaca.
+
+  - id: VOY-S2
+    title: "Penanggalan Radiokarbon Vellum Naskah Voynich"
+    publisher: "Jurnal Arkeometri (FIXTURE)"
+    url: "https://fixture.03am.invalid/arkeometri/radiokarbon-voynich"
+    source_type: academic
+    published_date: 2011-06-01
+    authors: ["Tim Penulis (FIXTURE)"]
+    origin: jurnal-arkeometri
+    text: >-
+      Uji radiokarbon pada sampel vellum menunjukkan bahan tulis itu berasal dari awal abad
+      ke-15, dengan rentang 1404 hingga 1438. Penanggalan ini berlaku untuk bahan vellum,
+      bukan untuk waktu penulisan teks secara pasti.
+
+  - id: VOY-S3
+    title: "Misteri Naskah yang Tak Terbaca"
+    publisher: "Majalah Sejarah (FIXTURE)"
+    url: "https://fixture.03am.invalid/majalah-sejarah/naskah-tak-terbaca"
+    source_type: media
+    published_date: 2019-09-01
+    authors: ["Redaksi (FIXTURE)"]
+    origin: majalah-sejarah
+    text: >-
+      Naskah Voynich dinamai menurut Wilfrid Voynich yang memperolehnya pada tahun 1912. Uji
+      radiokarbon menempatkan vellum naskah itu pada awal abad ke-15. Berbagai klaim telah
+      mengaku berhasil memecahkan teksnya, namun belum ada yang diterima secara luas oleh
+      para ahli. Hingga kini teks naskah itu belum berhasil dibaca.
+
+  - id: VOY-S4
+    title: "Analisis Statistik Teks Voynich"
+    publisher: "Jurnal Linguistik Komputasional (FIXTURE)"
+    url: "https://fixture.03am.invalid/linguistik/statistik-voynich"
+    source_type: academic
+    published_date: 2013-10-01
+    authors: ["Tim Penulis (FIXTURE)"]
+    origin: jurnal-linguistik
+    text: >-
+      Pola statistik dalam teks Voynich menyerupai sebagian ciri bahasa alami. Temuan ini
+      tidak membuktikan bahwa teks tersebut memiliki makna, tetapi melemahkan anggapan bahwa
+      teks itu sepenuhnya acak.
+
+  - id: VOY-S5
+    title: "Voynich Akhirnya Terpecahkan!"
+    publisher: "Blog Teka-Teki (FIXTURE)"
+    url: "https://fixture.03am.invalid/blog/voynich-terpecahkan"
+    source_type: secondary
+    published_date: 2022-02-01
+    authors: []
+    origin: blog-teka-teki
+    text: >-
+      Naskah Voynich sudah dipecahkan sepenuhnya dan isinya adalah buku resep ramuan rahasia.

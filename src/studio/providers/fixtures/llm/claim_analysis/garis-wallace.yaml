@@ -1,0 +1,40 @@
+# FIXTURE UJI: analisis klaim mock.
+response:
+  claims:
+    - key: wal-definition
+      statement: "Garis Wallace adalah batas biogeografi yang memisahkan fauna khas Asia di barat dari fauna khas Australasia di timur."
+      assertion_type: fact
+      importance: supporting
+      evidence_ids: [E-WAL-S1-1]
+    - key: wal-bali-lombok
+      statement: "Di bagian selatan, Garis Wallace melintas di antara Bali dan Lombok."
+      assertion_type: fact
+      importance: critical
+      evidence_ids: [E-WAL-S1-2, E-WAL-S4-1]
+    - key: wal-explorer
+      statement: "Alfred Russel Wallace menjelajahi Kepulauan Melayu antara 1854 dan 1862."
+      assertion_type: fact
+      importance: supporting
+      event_date: "1854"
+      evidence_ids: [E-WAL-S2-1]
+    - key: wal-contrast
+      statement: "Wallace mencatat perbedaan tajam antara hewan di Bali dan di Lombok, meskipun keduanya hanya dipisahkan selat yang sempit."
+      assertion_type: fact
+      importance: supporting
+      evidence_ids: [E-WAL-S2-2]
+    - key: wal-strait
+      statement: "Selat Lombok cukup dalam sehingga tetap menjadi lautan bahkan saat muka laut turun pada zaman es, sehingga hewan darat tidak pernah terhubung oleh jembatan darat di titik ini."
+      assertion_type: fact
+      importance: supporting
+      evidence_ids: [E-WAL-S3-1, E-WAL-S3-2]
+    - key: wal-huxley
+      statement: "Nama Garis Wallace diberikan oleh Thomas Henry Huxley pada tahun 1868."
+      assertion_type: fact
+      importance: supporting
+      event_date: "1868"
+      evidence_ids: [E-WAL-S4-2]
+    - key: wal-wallacea
+      statement: "Banyak peneliti memandang kawasan peralihan Wallacea lebih tepat daripada satu garis tegas."
+      assertion_type: interpretation
+      importance: supporting
+      evidence_ids: [E-WAL-S1-3]

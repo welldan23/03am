@@ -1,0 +1,93 @@
+# Aturan riset, format, narasi, dan editorial 03:AM. Semua bisa diubah tanpa mengubah kode.
+
+research:
+  max_sources: 12
+  # Fakta terverifikasi minimum agar riset layak dilanjutkan ke naskah.
+  min_verified_facts: 3
+  # Jumlah kelompok sumber INDEPENDEN (bukan sekadar jumlah sumber) per klaim.
+  min_independent_sources_critical: 2
+  min_independent_sources_supporting: 1
+  # Klaim baru boleh "terverifikasi" kalau sumber pendukung terbaiknya ber-tier ≤ nilai ini.
+  max_tier_for_verification: 3
+  # Sumber dengan tier lebih buruk dari ini tidak dihitung sebagai bukti independen
+  # dan tidak bisa membantah klaim.
+  max_tier_for_independence: 4
+  max_evidence_quote_words: 40
+  # Pola upaya prompt injection di dokumen sumber (regex, tanpa membedakan huruf besar).
+  injection_patterns:
+    - "abaikan (semua |seluruh )?(instruksi|perintah|aturan)"
+    - "ignore (all |any )?(the )?(previous|prior|above) (instructions|prompts|rules)"
+    - "(anda|kamu) sekarang (adalah|menjadi)"
+    - "you are now"
+    - "setujui (episode|naskah|gate|semua)"
+    - "approve (the )?(episode|editorial|gate|script)"
+    - "tandai semua klaim"
+    - "system prompt"
+    - "<\\s*/?\\s*(system|instructions?)\\s*>"
+
+narration:
+  # Kecepatan narasi rata-rata (kata per menit). Dikalibrasi ulang setelah uji TTS (Fase 4).
+  words_per_minute: 150
+  segment_pause_s: 0.4
+
+formats:
+  quick_files: {label: "Quick Files", min_s: 30, max_s: 45, default_s: 40}
+  archives: {label: "The Archives", min_s: 75, max_s: 90, default_s: 80}
+  deep_files: {label: "Deep Files", min_s: 120, max_s: 180, default_s: 135}
+
+editorial:
+  duration_tolerance_pct: 10
+  max_auto_revisions: 1
+  max_quote_words: 20
+  # Rangkaian kata yang sama persis dengan teks sumber.
+  verbatim_warn_words: 10
+  verbatim_block_words: 15
+  sensational_blocking_threshold: 2
+  min_claim_overlap: 0.1
+  hedge_markers:
+    - diduga
+    - menduga
+    - dugaan
+    - diperkirakan
+    - kemungkinan
+    - mungkin
+    - menurut
+    - menilai
+    - dinilai
+    - memandang
+    - dipandang
+    - hipotesis
+    - diperdebatkan
+    - belum
+    - tidak didukung
+    - sebagian peneliti
+  sensational_terms:
+    - paling mengerikan
+    - mengerikan
+    - mencekam
+    - menggemparkan
+    - heboh
+    - gila
+    - tak akan percaya
+    - tidak akan percaya
+    - dijamin
+    - "100%"
+    - pasti benar
+    - rahasia yang disembunyikan
+    - terbongkar
+    - fakta mengejutkan
+    - mustahil
+    - kiamat
+    - terkutuk
+    - wajib tonton
+    - bikin merinding
+  ambiguous_terms:
+    - katanya
+    - kabarnya
+    - konon
+    - banyak orang bilang
+    - orang bilang
+    - ada yang bilang
+    - sumber terpercaya
+    - para ahli
+    - sebagian orang

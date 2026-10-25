@@ -265,6 +265,34 @@ class JobQueue:
                 raise self._lease_lost(job_id, worker_id, lease_token)
             return self.get(job_id)
 
+    def heartbeat(self, job_id: str, worker_id: str, lease_token: int, lease_seconds: int) -> Job:
+        """Perpanjang lease yang MASIH sah (belum kedaluwarsa, token & owner sama).
+
+        Dipanggil sebelum pekerjaan eksternal yang lama (misalnya panggilan provider), supaya
+        worker yang sehat tidak kehilangan lease, sementara worker basi tetap tertolak.
+        """
+        if lease_seconds <= 0:
+            raise ValueError("lease_seconds harus positif")
+        now_dt = self._clock.now()
+        now = to_iso(now_dt)
+        with self._db.transaction():
+            cursor = self._db.execute(
+                "UPDATE jobs SET lease_until = ?, updated_at = ?"
+                " WHERE id = ? AND status = 'running' AND lease_owner = ?"
+                " AND lease_token = ? AND lease_until > ?",
+                (
+                    to_iso(now_dt + timedelta(seconds=lease_seconds)),
+                    now,
+                    job_id,
+                    worker_id,
+                    lease_token,
+                    now,
+                ),
+            )
+            if cursor.rowcount != 1:
+                raise self._lease_lost(job_id, worker_id, lease_token)
+            return self.get(job_id)
+
     def cancel_for_episode(self, episode_id: str) -> int:
         """Batalkan job episode yang masih antre. Job yang sedang jalan akan jadi obsolete."""
         cursor = self._db.execute(

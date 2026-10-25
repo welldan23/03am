@@ -1,0 +1,71 @@
+# FIXTURE UJI: analisis klaim mock. evidence_ids merujuk ID yang dibuat sistem
+# (E-<id sumber>-<urutan>). Kategori akhir (terverifikasi/diperdebatkan/...) TIDAK ditentukan
+# di sini, tetapi oleh fact checker deterministik.
+response:
+  claims:
+    - key: krak-activity-may
+      statement: "Aktivitas Krakatau meningkat sejak Mei 1883."
+      assertion_type: fact
+      importance: supporting
+      event_date: "1883-05"
+      evidence_ids: [E-KRK-S1-1]
+    - key: krak-peak-date
+      statement: "Puncak letusan Krakatau terjadi pada 26–27 Agustus 1883, dengan ledakan terbesar pada pagi 27 Agustus 1883."
+      assertion_type: fact
+      importance: critical
+      event_date: "1883-08-27"
+      evidence_ids: [E-KRK-S1-2, E-KRK-S6-2, E-KRK-S10-1]
+    - key: krak-location
+      statement: "Krakatau adalah gugusan pulau vulkanik di Selat Sunda, di antara Jawa dan Sumatra."
+      assertion_type: fact
+      importance: supporting
+      evidence_ids: [E-KRK-S1-3, E-KRK-S6-1]
+    - key: krak-sound
+      statement: "Dentuman letusan Krakatau dilaporkan terdengar di Pulau Rodrigues, sekitar 4.800 kilometer dari sumbernya."
+      assertion_type: fact
+      importance: critical
+      event_date: "1883-08-27"
+      evidence_ids: [E-KRK-S3-1, E-KRK-S4-2]
+    - key: krak-tsunami
+      statement: "Tsunami yang dipicu letusan menjadi penyebab utama korban jiwa di pesisir Banten dan Lampung."
+      assertion_type: fact
+      importance: critical
+      event_date: "1883-08-27"
+      evidence_ids: [E-KRK-S1-6, E-KRK-S2-2]
+    - key: krak-deaths
+      statement: "Catatan resmi mencatat 36.417 korban jiwa, atau lebih dari 36.000 orang, sebagian besar akibat tsunami."
+      assertion_type: fact
+      importance: critical
+      event_date: "1883-08-27"
+      evidence_ids: [E-KRK-S2-1, E-KRK-S6-3]
+      conflicts_with: [krak-deaths-120k]
+    - key: krak-deaths-120k
+      statement: "Korban tewas letusan Krakatau mencapai lebih dari 120.000 orang."
+      assertion_type: fact
+      importance: critical
+      event_date: "1883-08-27"
+      evidence_ids: [E-KRK-S5-1, E-KRK-S2-3]
+      conflicts_with: [krak-deaths]
+    - key: krak-sunsets
+      statement: "Aerosol letusan membuat senja berwarna merah menyala teramati di banyak negara selama berbulan-bulan."
+      assertion_type: fact
+      importance: supporting
+      event_date: "1883"
+      evidence_ids: [E-KRK-S1-4, E-KRK-S4-1, E-KRK-S7-2]
+    - key: krak-telegraph
+      statement: "Kabar letusan menyebar ke berbagai benua dalam hitungan jam melalui jaringan telegraf."
+      assertion_type: fact
+      importance: supporting
+      event_date: "1883-08"
+      evidence_ids: [E-KRK-S3-2, E-KRK-S4-3]
+    - key: krak-temperature
+      statement: "Suhu rata-rata global turun pada tahun setelah letusan."
+      assertion_type: fact
+      importance: critical
+      event_date: "1884"
+      evidence_ids: [E-KRK-S1-5, E-KRK-S8-1]
+    - key: krak-scream
+      statement: "Langit merah setelah letusan Krakatau mengilhami lukisan The Scream karya Edvard Munch."
+      assertion_type: hypothesis
+      importance: supporting
+      evidence_ids: [E-KRK-S7-1, E-KRK-S9-1]

@@ -1,0 +1,13 @@
+# Routing & batas panggilan LLM per task (hybrid model routing).
+# tier → harga di config/pricing.yaml (openai.<tier>.input/output).
+# max_output_tokens dipaksakan ke provider dan dipakai untuk estimasi biaya terburuk.
+chars_per_token: 4
+json_retries: 1
+tasks:
+  topic_discovery:       {tier: fast,  max_output_tokens: 1200, timeout_s: 60}
+  research_plan:         {tier: fast,  max_output_tokens: 800,  timeout_s: 60}
+  evidence_extraction:   {tier: fast,  max_output_tokens: 900,  timeout_s: 60}
+  claim_analysis:        {tier: smart, max_output_tokens: 2500, timeout_s: 90}
+  script_generation:     {tier: smart, max_output_tokens: 3000, timeout_s: 120}
+  script_revision:       {tier: smart, max_output_tokens: 3000, timeout_s: 120}
+  script_quality_review: {tier: fast,  max_output_tokens: 600,  timeout_s: 60}

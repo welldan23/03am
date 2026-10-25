@@ -1,0 +1,48 @@
+# FIXTURE UJI: ekstraksi bukti mock, satu respons per sumber (varian = ID sumber).
+# Kutipan HARUS persis ada di teks sumber; sistem memverifikasinya.
+responses:
+  KRK-S1:
+    evidence:
+      - {quote: "Aktivitas Krakatau meningkat sejak Mei 1883.", stance: supports, claim_key: krak-activity-may}
+      - {quote: "Puncak letusan terjadi pada 26 dan 27 Agustus 1883, dengan ledakan terbesar pada pagi hari 27 Agustus.", stance: supports, claim_key: krak-peak-date}
+      - {quote: "Gugusan Krakatau terletak di Selat Sunda, di antara Pulau Jawa dan Sumatra.", stance: supports, claim_key: krak-location}
+      - {quote: "Partikel dan aerosol yang terlempar ke stratosfer menyebabkan senja berwarna merah menyala yang teramati di banyak negara selama berbulan-bulan setelah letusan.", stance: supports, claim_key: krak-sunsets}
+      - {quote: "Data pengamatan menunjukkan penurunan suhu rata-rata global pada tahun berikutnya.", stance: supports, claim_key: krak-temperature}
+      - {quote: "Tsunami yang dipicu letusan menjadi penyebab utama korban jiwa di pesisir Banten dan Lampung.", stance: supports, claim_key: krak-tsunami}
+  KRK-S2:
+    evidence:
+      - {quote: "Laporan resmi pemerintah kolonial mencatat 36.417 korban jiwa akibat bencana Krakatau.", stance: supports, claim_key: krak-deaths}
+      - {quote: "Sebagian besar korban tewas akibat gelombang tsunami yang melanda pesisir Banten dan Lampung pada 27 Agustus 1883.", stance: supports, claim_key: krak-tsunami}
+      - {quote: "Arsip ini tidak mendukung angka korban di atas seratus ribu jiwa yang kemudian beredar dalam sejumlah tulisan populer.", stance: contradicts, claim_key: krak-deaths-120k}
+  KRK-S3:
+    evidence:
+      - {quote: "Dentuman letusan Krakatau dilaporkan terdengar di Pulau Rodrigues, sekitar 4.800 kilometer dari sumbernya.", stance: supports, claim_key: krak-sound}
+      - {quote: "Kabar letusan menyebar ke berbagai benua dalam hitungan jam melalui jaringan telegraf.", stance: supports, claim_key: krak-telegraph}
+  KRK-S4:
+    evidence:
+      - {quote: "letusan Krakatau membuat senja berwarna merah menyala terlihat di banyak negara selama berbulan-bulan.", stance: supports, claim_key: krak-sunsets}
+      - {quote: "Dentuman letusan juga dilaporkan terdengar di Pulau Rodrigues.", stance: supports, claim_key: krak-sound}
+      - {quote: "Kabar letusan menyebar ke berbagai benua dalam hitungan jam melalui jaringan telegraf.", stance: supports, claim_key: krak-telegraph}
+  KRK-S5:
+    evidence:
+      - {quote: "Letusan Krakatau menewaskan lebih dari 120.000 orang dan merupakan ledakan paling mengerikan sepanjang sejarah manusia.", stance: supports, claim_key: krak-deaths-120k}
+  KRK-S6:
+    evidence:
+      - {quote: "Krakatau adalah gugusan pulau vulkanik di Selat Sunda, di antara Jawa dan Sumatra.", stance: supports, claim_key: krak-location}
+      - {quote: "Letusan Krakatau mencapai puncaknya pada 27 Agustus 1883.", stance: supports, claim_key: krak-peak-date}
+      - {quote: "Letusan tahun 1883 menewaskan lebih dari 36.000 jiwa, sebagian besar akibat tsunami.", stance: supports, claim_key: krak-deaths}
+  KRK-S7:
+    evidence:
+      - {quote: "Sejumlah astronom mengajukan hipotesis bahwa langit merah setelah letusan Krakatau mengilhami lukisan The Scream karya Edvard Munch.", stance: supports, claim_key: krak-scream}
+      - {quote: "Senja merah akibat letusan Krakatau memang teramati di Eropa pada akhir 1883.", stance: supports, claim_key: krak-sunsets}
+  KRK-S8:
+    evidence:
+      - {quote: "data pengamatan menunjukkan penurunan suhu rata-rata global pada tahun berikutnya.", stance: supports, claim_key: krak-temperature}
+  KRK-S9:
+    evidence:
+      - {quote: "Hubungan antara Krakatau dan The Scream karena itu masih diperdebatkan.", stance: contradicts, claim_key: krak-scream}
+  KRK-S10:
+    evidence:
+      - {quote: "Krakatau meletus pada tahun 1883.", stance: supports, claim_key: krak-peak-date}
+  default:
+    evidence: []

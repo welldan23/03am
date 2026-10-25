@@ -122,3 +122,59 @@ def test_database_errors_are_reported_without_traceback(
     code, text = run(app, "budget", "status")
     assert code == 1
     assert "database is locked" in text
+
+
+# --- Fase 2: riset & naskah lewat CLI ------------------------------------------------
+
+
+def test_phase2_pipeline_via_cli(app: App) -> None:
+    def ok(*argv: str) -> str:
+        code, text = run(app, *argv)
+        assert code == 0, text
+        return text
+
+    ok("budget", "activate")
+    created = ok("episode", "new", "--category", "sejarah", "--format", "archives")
+    assert "80s" in created and "archives" in created
+    episode_id = created.split()[2]
+
+    waiting = ok("pipeline", "run", episode_id)  # tanpa --topic: berhenti di G0
+    assert "Menunggu pilihan topik" in waiting and "Dentuman Krakatau 1883" in waiting
+    assert app.episodes.get(episode_id).status is EpisodeStatus.AWAITING_TOPIC
+
+    done = ok("pipeline", "run", episode_id, "--topic", "1")
+    assert "AWAITING_EDITORIAL" in done and "G1" in done
+
+    research = ok("research", "show", episode_id)
+    assert "Fakta terverifikasi (8)" in research and "Diperdebatkan (2)" in research
+    assert "Belum terverifikasi (1)" in research and "INJECTION_SUSPECTED" in research
+    assert "fixture.03am.invalid" in research
+    assert '"verified_facts"' in ok("research", "show", episode_id, "--json")
+
+    script = ok("script", "show", episode_id)
+    assert "HOOK" in script and "CLOSING" in script and "Editorial gate: LULUS" in script
+    assert "[C-krak-peak-date, C-krak-sound]" in script and "Pelafalan" in script
+
+    calls = ok("llm", "calls", episode_id)
+    assert "research_plan" in calls and "succeeded" in calls and "otorisasi" in calls
+
+
+def test_director_cannot_use_pipeline_to_approve_topic(app: App) -> None:
+    run(app, "budget", "activate")
+    _, created = run(app, "episode", "new", "--category", "sains", "--format", "quick_files")
+    episode_id = created.split()[2]
+    code, text = run(
+        app, "--actor", "director:hermes", "pipeline", "run", episode_id, "--topic", "1"
+    )
+    assert code == 1 and "tidak berhak" in text
+    assert app.episodes.get(episode_id).status is EpisodeStatus.AWAITING_TOPIC
+
+
+def test_override_editorial_via_cli_requires_failed_script(app: App) -> None:
+    run(app, "budget", "activate")
+    _, created = run(app, "episode", "new", "--category", "sains", "--format", "quick_files")
+    episode_id = created.split()[2]
+    code, text = run(
+        app, "episode", "override-editorial", episode_id, "--reason", "alasan yang cukup panjang"
+    )
+    assert code == 1 and "SCRIPTING" in text

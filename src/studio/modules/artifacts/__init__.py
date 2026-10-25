@@ -21,6 +21,8 @@ class ArtifactKind(StrEnum):
     RESEARCH = "research"
     FACTCHECK = "factcheck"
     SCRIPT = "script"
+    EDITORIAL_REPORT = "editorial_report"
+    EDITORIAL_OVERRIDE = "editorial_override"
     STORYBOARD = "storyboard"
     COST_ESTIMATE = "cost_estimate"
     RENDER = "render"

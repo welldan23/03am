@@ -19,8 +19,8 @@
 | Fase | Nama | Hasil utama | Status |
 |---|---|---|---|
 | 0 | Fondasi | Tooling, CI, `shared/` | ✅ selesai (bersama Fase 1) |
-| 1 | Inti domain | State machine, approval, budget, ledger, job queue, audit, CLI | ✅ selesai + audit teknis ([laporan](reviews/phase-1-audit.md)) — **menunggu persetujuan owner** |
-| 2 | Pipeline konten (mock LLM) | Discovery → research → fact check → script → storyboard | Belum dimulai |
+| 1 | Inti domain | State machine, approval, budget, ledger, job queue, audit, CLI | ✅ selesai + audit teknis ([laporan](reviews/phase-1-audit.md)), disetujui owner |
+| 2 | Research & script engine (mock LLM) | Discovery → research → fact check → naskah 3 format → editorial gate | ✅ selesai ([laporan](reviews/phase-2-implementation.md)) — **menunggu persetujuan owner** |
 | 3 | Telegram Studio Bot (1 bot) | Approval G0–G3 lewat tombol, status, budget | Belum |
 | 4 | Aset, TTS, render, ekspor (mock) | MP4 utuh dari aset mock + paket ekspor + benchmark render | Belum |
 | 5 | Hermes AI Director | Spike → gateway metering → MCP server → Director di bot yang sama | Belum |
@@ -106,26 +106,40 @@ MVP = Fase 0–5 selesai: satu episode bisa dibuat lengkap lewat Telegram dengan
 
 ---
 
-## Fase 2 — Pipeline Konten (Mock LLM)
+## Fase 2 — Research & Documentary Script Engine (Mock LLM)
 
-**Pekerjaan**
-- `providers/llm`: `LLMPort`, `MockLLM`, `LLMRouter` (tier `fast`/`smart`, cache, validasi Pydantic, retry JSON) — semua lewat `BudgetGuard`.
-- `providers/sources`: `SourcePort`, `MockSources` (3 topik contoh).
-- `prompts/` versi pertama (Bahasa Indonesia), style bible di `config/styles/`.
-- Modul `discovery`, `research`, `factcheck`, `scripting`, `storyboard` menggantikan handler placeholder.
+**Pekerjaan** (selesai — detail di [laporan implementasi](reviews/phase-2-implementation.md))
+- TD-01: eksekusi job dua fase (`Lease`, `heartbeat`, `finish`, `atomic`) — [ADR-0011](adr/0011-eksekusi-job-dua-fase.md).
+- `modules/calls`: `MeteredCaller` + tabel `provider_calls` (idempotency, status `unknown`, tiket belanja) dan `LLMClient` (prompt file, `wrap_data`, validasi Pydantic, retry JSON 1×).
+- `providers/llm` (`MockLLMProvider` berbasis fixture, bisa disuntik fault) dan `providers/sources` (`FixtureSourceLibrary`, 3 topik).
+- `modules/research`: discovery, research plan, ekstraksi bukti, penilaian sumber (tier, skor, kelompok independen), anti prompt-injection, `FactChecker` deterministik → `ResearchBrief` + `ResearchQualityReport`.
+- `modules/scripting`: format Quick Files / The Archives / Deep Files, timing dari WPM, `EditorialGate` deterministik, auto-revisi 1×, laporan revisi, override owner.
+- CLI: `episode new --format`, `pipeline run`, `research show`, `script show`, `llm calls`, `episode override-editorial`.
+- Storyboard sengaja **belum** dibuat (masih placeholder yang diturunkan dari segmen naskah) → Fase 4.
 
-**Acceptance Criteria**
-- [ ] AC2.1 Discovery menghasilkan 3–5 kandidat valid dengan label risiko.
-- [ ] AC2.2 Dossier menyimpan sumber lengkap (URL, judul, penerbit, tanggal akses).
-- [ ] AC2.3 Klaim kritis dengan < 2 sumber independen berstatus `belum terverifikasi`.
-- [ ] AC2.4 Episode dengan klaim kritis `belum terverifikasi` tidak bisa masuk `AWAITING_EDITORIAL`, kecuali ada override owner yang tercatat.
-- [ ] AC2.5 Jumlah kata naskah untuk target 30/60/180 detik ada dalam ±10% dari `durasi × 2,5`.
-- [ ] AC2.6 Total durasi storyboard = durasi narasi ± 1 detik; durasi `ai_video` di-snap ke nilai yang didukung.
-- [ ] AC2.7 Jumlah shot `ai_video` ≤ batas per episode.
-- [ ] AC2.8 JSON rusak di-retry 1× lalu job `FAILED` dengan pesan jelas.
-- [ ] AC2.9 Router memilih tier sesuai tabel; panggilan identik diambil dari cache tanpa biaya tambahan.
-- [ ] AC2.10 Fixture sumber berisi instruksi jahat tidak mengubah perilaku pipeline.
-- [ ] AC2.11 Biaya pra-produksi per episode tidak melewati batas otorisasi G0.
+**Acceptance Criteria** (bukti = nama test)
+- [x] AC2.1 Discovery menghasilkan 3–5 kandidat valid dengan label sensitivitas & keterverifikasian, dibayar dari otorisasi operasional. — `test_discovery_offers_labelled_candidates_before_g0`
+- [x] AC2.2 Dossier menyimpan sumber lengkap (URL, judul, penerbit, tanggal publikasi, **tanggal akses**, asal fixture). — `test_krakatau_claims_are_classified_and_traceable`
+- [x] AC2.3 Klaim kritis dengan < 2 kelompok sumber independen berstatus `belum terverifikasi` (artikel turunan tidak dihitung independen). — `test_critical_claim_needs_two_independent_groups`, `test_derived_and_same_origin_sources_are_not_independent`
+- [x] AC2.4 *(dipertegas)* Klaim `belum terverifikasi` tidak boleh dipakai di naskah: editorial gate memblokir, episode tidak masuk `AWAITING_EDITORIAL` kecuali owner override dengan alasan tercatat. — `test_blocking_rules[unverified]`, `test_script_failing_twice_produces_revision_report`, `test_owner_override_moves_failed_script_to_g1`
+- [x] AC2.5 *(diganti brief Fase 2)* Naskah ketiga format masuk rentangnya (30–45 / 75–90 / 120–180 s); timing dihitung dari WPM yang configurable; melebihi target +10% = blocking. — `test_scripts_fit_format_and_reach_editorial_gate`, `test_timing_uses_configured_words_per_minute`, `test_too_long_for_target_or_format_is_blocking`
+- [ ] AC2.6 Total durasi storyboard = durasi narasi ± 1 detik; durasi `ai_video` di-snap. — **dipindah ke Fase 4** (storyboard engine belum dibuat).
+- [x] AC2.7 Jumlah shot `ai_video` ≤ batas per episode (di storyboard placeholder). — `test_storyboard_is_derived_from_script_segments`
+- [x] AC2.8 JSON rusak di-retry 1× (tercatat sebagai panggilan terpisah) lalu job `FAILED` dengan pesan jelas. — `test_invalid_json_retry_is_metered_separately`, `test_invalid_json_twice_fails_episode_with_clear_message`
+- [x] AC2.9 Tiap task memakai tier dari `config/llm.yaml`; panggilan dengan key yang sama dipakai ulang tanpa biaya tambahan. — `test_each_task_is_routed_to_its_configured_tier`, `test_stale_worker_result_is_not_accepted_but_cost_is_reused`
+- [x] AC2.10 Sumber fixture berisi instruksi jahat dikarantina dan tidak mengubah perilaku pipeline (tidak bisa approve, tidak masuk analisis klaim). — `test_prompt_injection_source_is_neutralized`, `test_all_prompts_wrap_untrusted_data`
+- [x] AC2.11 Biaya pra-produksi per episode tidak melewati batas otorisasi G0 (Rp5.000); melebihi → `FAILED` + audit `budget.denied`. — `test_every_llm_operation_has_full_cost_trail`, `test_budget_denial_fails_episode_without_retry`
+
+*Tambahan dari brief Fase 2*
+- [x] AC2.12 Provider tidak pernah dipanggil saat SQLite write lock dipegang; handler berjalan di luar transaksi. — `test_provider_is_never_called_while_sqlite_write_lock_is_held`, `test_handler_runs_outside_any_transaction`, `test_external_work_inside_transaction_is_refused`
+- [x] AC2.13 Timeout atau worker mati di tengah panggilan → `unknown`, biaya dicatat sebesar reservasi, **tidak** diulang otomatis. — `test_timeout_is_unknown_outcome_and_never_blindly_retried`, `test_crash_during_call_is_not_replayed_blindly`
+- [x] AC2.14 Hasil dari worker basi (lease habis/diambil alih, episode berubah) tidak diterima. — `test_stale_worker_result_is_not_accepted`, `test_takeover_during_call_marks_unknown_and_stale_result_is_dropped`, `test_result_is_rejected_when_episode_changes_during_external_work`
+- [x] AC2.15 Setiap operasi LLM punya estimasi token/biaya, otorisasi, idempotency key, dan ledger entry; tidak ada jalur provider yang melewati `BudgetGuard`. — `test_every_llm_operation_has_full_cost_trail`, `test_provider_rejects_calls_without_valid_ticket`, `test_no_authorization_means_provider_is_never_called`, `test_app_does_not_expose_raw_provider`
+- [x] AC2.16 Kutipan, sumber, dan URL karangan model ditolak. — `test_source_hallucination_is_rejected`, `test_hallucinated_quote_unknown_source_and_url_are_rejected`
+- [x] AC2.17 Klaim dikategorikan fakta terverifikasi / interpretasi / hipotesis / diperdebatkan / belum terverifikasi. — `test_hypothesis_and_interpretation_are_kept_separate`, `test_contradiction_makes_claim_disputed_but_tier5_cannot_dispute`, `test_other_topics`
+- [x] AC2.18 Editorial gate memblokir pelanggaran fakta, struktur, panjang, sensasional, kutipan panjang, dan salinan teks sumber; gagal → auto-revisi 1× → laporan revisi. — `test_blocking_rules`, `test_failing_script_is_auto_revised_once`
+- [x] AC2.19 AI tidak bisa approve G1 atau override editorial; review LLM yang "menyetujui" diabaikan. — `test_owner_override_moves_failed_script_to_g1`, `test_director_cannot_use_pipeline_to_approve_topic`
+- [x] AC2.20 Alur Fase 2 bisa dijalankan dari CLI saja; seluruh regression test Fase 1 tetap lulus. — `test_phase2_pipeline_via_cli`, seluruh `tests/`
 
 ---
 
@@ -153,10 +167,12 @@ MVP = Fase 0–5 selesai: satu episode bisa dibuat lengkap lewat Telegram dengan
 
 **Pekerjaan**
 - `providers/image|video|tts`: port + mock. `MockVideo` meniru status async.
+- `modules/storyboard` (dari Fase 2): shot list dari segmen naskah, snap durasi `ai_video`.
 - `modules/assets`, `voice`, `render`, `export`.
 - Skrip benchmark render (`scripts/bench_render.py`) + `docs/benchmarks/`.
 
 **Acceptance Criteria**
+- [ ] AC2.6 (dipindah dari Fase 2) Total durasi storyboard = durasi narasi ± 1 detik; durasi `ai_video` di-snap ke nilai yang didukung.
 - [ ] AC4.1 Episode mock 30 detik dan 180 detik ter-render menjadi MP4 1080×1920, 30 fps, H.264/AAC (dicek `ffprobe`).
 - [ ] AC4.2 Durasi video = durasi voice ± 0,5 detik.
 - [ ] AC4.3 Loudness −14 LUFS ± 1.

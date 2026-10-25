@@ -1,27 +1,33 @@
-"""Worker sinkron: klaim job → jalankan handler + tandai selesai dalam SATU transaksi.
+"""Worker sinkron dengan eksekusi dua fase (TD-01).
 
-Kalau proses mati di tengah handler, transaksi di-rollback dan job diambil ulang setelah
-lease habis, jadi efek handler (artefak, ledger, transisi) tidak pernah tercatat dua kali.
+Handler dipanggil di LUAR transaksi. Hasilnya hanya diterima lewat `Lease.finish()`, yaitu
+transaksi singkat yang menulis hasil sekaligus menandai job selesai (dengan cek fencing token
+dan masa berlaku lease). Kalau proses mati sebelum `finish` commit, tidak ada hasil yang
+tercatat dan job diambil ulang setelah lease habis.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from enum import StrEnum
 
 from studio.infra.db import Database
+from studio.infra.jobs.lease import JobExecutionError, JobOutcome, Lease
 from studio.infra.jobs.queue import Job, JobQueue, JobStatus, LeaseLostError
 from studio.shared.errors import NonRetryableError
 from studio.shared.logging import get_logger
 
-
-class JobOutcome(StrEnum):
-    DONE = "done"
-    OBSOLETE = "obsolete"
-
-
-Handler = Callable[[Job], JobOutcome]
+Handler = Callable[[Job, Lease], JobOutcome]
 DeadLetterHook = Callable[[Job, str], None]
+
+
+def atomic(work: Callable[[Job], JobOutcome]) -> Handler:
+    """Adaptor untuk handler yang hanya menulis DB (tanpa I/O): seluruhnya di dalam `finish`."""
+
+    def handler(job: Job, lease: Lease) -> JobOutcome:
+        return lease.finish(lambda: work(job))
+
+    return handler
+
 
 _log = get_logger("studio.jobs")
 
@@ -65,12 +71,16 @@ class Worker:
         try:
             if handler is None:
                 raise NonRetryableError(f"tidak ada handler untuk job '{job.type}'")
-            with self._db.transaction():
-                outcome = handler(job)
-                status = (
-                    JobStatus.OBSOLETE if outcome is JobOutcome.OBSOLETE else JobStatus.SUCCEEDED
-                )
-                self._queue.complete(job.id, self._worker_id, job.lease_token, status)
+            lease = Lease(
+                self._db,
+                self._queue,
+                job,
+                worker_id=self._worker_id,
+                lease_seconds=self._lease_seconds,
+            )
+            outcome = handler(job, lease)
+            if not lease.finished:
+                raise JobExecutionError(f"handler '{job.type}' tidak memanggil lease.finish()")
             _log.info("job.completed", job_id=job.id, job_type=job.type, outcome=outcome.value)
         except LeaseLostError:
             _log.warning("job.lease_lost", job_id=job.id)

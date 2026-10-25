@@ -1,0 +1,9 @@
+# FIXTURE UJI: rencana riset mock.
+response:
+  objective: "Menjelaskan Garis Wallace dan penyebab geografisnya."
+  questions:
+    - {id: Q1, question: "Apa itu Garis Wallace dan di mana letaknya?", priority: critical}
+    - {id: Q2, question: "Mengapa fauna di kedua sisi berbeda?", priority: critical}
+    - {id: Q3, question: "Bagaimana para peneliti memandangnya sekarang?", priority: supporting}
+  search_queries: ["Garis Wallace Bali Lombok", "Selat Lombok muka laut", "Wallacea zona peralihan"]
+  out_of_scope: []

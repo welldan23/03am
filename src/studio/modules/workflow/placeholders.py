@@ -1,12 +1,13 @@
-"""Handler tahap PLACEHOLDER untuk Fase 1.
+"""Handler tahap PLACEHOLDER (berjalan di dalam transaksi, tanpa I/O).
 
-Tidak ada AI, riset, atau render sungguhan di sini. Tiap tahap hanya membuat artefak contoh
-dan mencatat biaya SIMULASI lewat BudgetGuard, supaya state machine, approval, dan ledger
-bisa diuji end-to-end. Fase 2 dan 4 menggantinya dengan modul sungguhan.
+Sejak Fase 2, discovery → riset → cek fakta → naskah memakai mesin sungguhan (lihat
+`stages.py`). Yang tersisa di sini: storyboard turunan naskah, estimasi biaya, aset, suara,
+render, dan ekspor — semuanya contoh dengan biaya SIMULASI sampai Fase 4.
 """
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Mapping
 from typing import Any, Protocol
 
@@ -14,7 +15,6 @@ from studio.modules.artifacts import Artifact, ArtifactKind
 from studio.modules.budget import AuthorizationKind, CostEstimate, EstimateLine
 from studio.modules.episodes import Episode, EpisodeStatus
 
-WORDS_PER_SECOND_NUM, WORDS_PER_SECOND_DEN = 5, 2  # 2,5 kata/detik (dikalibrasi di Fase 2)
 CHARS_PER_WORD = 6
 SHOT_SECONDS = 5
 MAX_HERO_SHOTS = 3
@@ -48,92 +48,36 @@ class StageContext(Protocol):
     def estimate(self, lines: list[EstimateLine]) -> CostEstimate: ...
 
 
-def _discover(ctx: StageContext) -> None:
-    ctx.spend_llm(
-        "discovery",
-        tier="fast",
-        input_tokens=1500,
-        output_tokens=800,
-        authorization=AuthorizationKind.OPERATIONAL,
-    )
-    category = ctx.episode.category.value
-    ctx.put(
-        ArtifactKind.TOPICS,
-        {
-            "placeholder": True,
-            "notes": ctx.notes,
-            "candidates": [
-                {
-                    "title": f"[PLACEHOLDER] Topik {category} #{i}",
-                    "angle": "contoh angle",
-                    "risk": "rendah",
-                }
-                for i in range(1, 4)
-            ],
-        },
-    )
-
-
-def _research(ctx: StageContext) -> None:
-    ctx.spend_llm(
-        "research",
-        tier="fast",
-        input_tokens=4000,
-        output_tokens=1500,
-        authorization=AuthorizationKind.PREPRODUCTION,
-    )
-    ctx.put(ArtifactKind.RESEARCH, {"placeholder": True, "notes": ctx.notes, "sources": []})
-
-
-def _factcheck(ctx: StageContext) -> None:
-    ctx.spend_llm(
-        "factcheck",
-        tier="smart",
-        input_tokens=3000,
-        output_tokens=1000,
-        authorization=AuthorizationKind.PREPRODUCTION,
-    )
-    ctx.put(ArtifactKind.FACTCHECK, {"placeholder": True, "notes": ctx.notes, "claims": []})
-
-
-def _script(ctx: StageContext) -> None:
-    ctx.spend_llm(
-        "script",
-        tier="smart",
-        input_tokens=2500,
-        output_tokens=1200,
-        authorization=AuthorizationKind.PREPRODUCTION,
-    )
-    words = ctx.episode.target_duration_s * WORDS_PER_SECOND_NUM // WORDS_PER_SECOND_DEN
-    ctx.put(
-        ArtifactKind.SCRIPT,
-        {
-            "placeholder": True,
-            "notes": ctx.notes,
-            "word_count": words,
-            "text": "[PLACEHOLDER] Naskah narasi akan dibuat di Fase 2.",
-        },
-    )
-
-
 def _storyboard(ctx: StageContext) -> None:
-    ctx.spend_llm(
-        "storyboard",
-        tier="fast",
-        input_tokens=2000,
-        output_tokens=1500,
-        authorization=AuthorizationKind.PREPRODUCTION,
-    )
-    shot_count = max(1, ctx.episode.target_duration_s // SHOT_SECONDS)
-    shots = [
+    """Storyboard sementara diturunkan dari segmen naskah (storyboard visual sungguhan: Fase 4).
+
+    Tidak memanggil provider: hanya membagi tiap segmen ke shot ±5 detik dan membawa arahan
+    visual dari naskah.
+    """
+    script = ctx.latest(ArtifactKind.SCRIPT).content
+    shots: list[dict[str, Any]] = []
+    for segment in script["segments"]:
+        count = max(1, math.ceil(float(segment["duration_s"]) / SHOT_SECONDS))
+        for _ in range(count):
+            index = len(shots) + 1
+            shots.append(
+                {
+                    "index": index,
+                    "segment": segment["role"],
+                    "duration_s": SHOT_SECONDS,
+                    "visual": "ai_video" if index <= MAX_HERO_SHOTS else "ai_image",
+                    "direction": segment["visual_direction"],
+                }
+            )
+    ctx.put(
+        ArtifactKind.STORYBOARD,
         {
-            "index": i + 1,
-            "duration_s": SHOT_SECONDS,
-            "visual": "ai_video" if i < MAX_HERO_SHOTS else "ai_image",
-        }
-        for i in range(shot_count)
-    ]
-    ctx.put(ArtifactKind.STORYBOARD, {"placeholder": True, "notes": ctx.notes, "shots": shots})
+            "placeholder": True,
+            "derived_from_script_revision": script.get("revision", 0),
+            "notes": ctx.notes,
+            "shots": shots,
+        },
+    )
 
 
 def _estimate_cost(ctx: StageContext) -> None:
@@ -191,10 +135,6 @@ def _export(ctx: StageContext) -> None:
 
 
 PLACEHOLDER_STAGES: Mapping[EpisodeStatus, Callable[[StageContext], None]] = {
-    EpisodeStatus.DISCOVERING: _discover,
-    EpisodeStatus.RESEARCHING: _research,
-    EpisodeStatus.FACT_CHECKING: _factcheck,
-    EpisodeStatus.SCRIPTING: _script,
     EpisodeStatus.STORYBOARDING: _storyboard,
     EpisodeStatus.ESTIMATING_COST: _estimate_cost,
     EpisodeStatus.GENERATING_ASSETS: _generate_assets,

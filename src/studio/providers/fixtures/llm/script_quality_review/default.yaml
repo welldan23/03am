@@ -1,0 +1,5 @@
+# FIXTURE UJI: review gaya mock. Hanya saran (advisory) — tidak pernah menentukan lulus/gagal.
+response:
+  notes:
+    - {severity: info, segment: hook, message: "Hook sudah membuka dengan detail konkret; pertahankan tempo tenang."}
+    - {severity: info, segment: closing, message: "Penutup reflektif tanpa klaim baru — sesuai gaya 03:AM."}

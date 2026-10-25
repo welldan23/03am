@@ -21,6 +21,16 @@
 - geografi
 - misteri
 
+Di dalam lima kategori episode itu, topik dipetakan ke **8 kategori topik**: sejarah dunia, geografi, geopolitik, sains & teknologi, misteri sejarah, peradaban kuno, fenomena alam, dan fakta unik.
+
+Ada tiga **format** episode:
+
+| Format | Durasi | Default | Cocok untuk |
+|---|---|---|---|
+| **Quick Files** | 30–45 detik | 40 detik | satu fakta mengejutkan + konteks singkat |
+| **The Archives** | 75–90 detik | 80 detik | satu kisah utuh dengan konflik dan penjelasan |
+| **Deep Files** | 120–180 detik | 135 detik | topik berlapis, banyak sumber, ada perdebatan |
+
 AI mengerjakan bagian berat (cari topik, riset, cek fakta, tulis naskah, susun storyboard, bikin aset, sulih suara, render). Manusia tetap jadi **pemimpin redaksi dan pemegang dompet**: setiap pengeluaran dan setiap hasil akhir **wajib disetujui manusia**.
 
 **Hermes Agent** (open-source, Nous Research) berperan sebagai **AI Director**: teman ngobrol yang mengarahkan produksi, menjelaskan progres, dan menerjemahkan permintaan revisi. Tapi Director **tidak punya wewenang** menyetujui biaya atau hasil akhir.
@@ -124,22 +134,27 @@ Prioritas: **P0** = wajib MVP, **P1** = penting setelah MVP, **P2** = nanti.
 ### 7.2 Topic discovery
 
 - **FR-TD-01 (P0)** Hasilkan 3–5 kandidat topik per permintaan, sesuai kategori.
-- **FR-TD-02 (P0)** Tiap kandidat punya label risiko sensitivitas (`rendah`/`sedang`/`tinggi`) + alasannya.
+- **FR-TD-02 (P0)** Tiap kandidat punya label risiko sensitivitas (`rendah`/`sedang`/`tinggi`) + alasannya, tingkat keterverifikasian, kategori topik, dan saran format.
 - **FR-TD-03 (P1)** Cegah topik duplikat dengan episode lama (pencocokan judul/kata kunci).
 - **FR-TD-04 (P2)** Saran topik terjadwal (misal tiap Senin) — tetap menunggu pilihan manusia.
 
 ### 7.3 Research & fact checking
 
 - **FR-RS-01 (P0)** Semua sumber tercatat: URL, judul, penerbit, tanggal akses, jenis sumber.
-- **FR-RS-02 (P0)** Konten dari sumber diperlakukan sebagai **data**, bukan instruksi (anti prompt-injection).
+- **FR-RS-02 (P0)** Konten dari sumber diperlakukan sebagai **data**, bukan instruksi (anti prompt-injection). Sumber yang berisi pola instruksi tersembunyi dikarantina dan tidak dihitung sebagai bukti.
+- **FR-RS-03 (P0)** Output AI **bukan** sumber. Kutipan bukti harus ada persis di teks sumber; kutipan, URL, nama peneliti, atau referensi yang dikarang ditolak.
+- **FR-RS-04 (P0)** Sumber dinilai kualitasnya (tier 1 arsip/jurnal … tier 5 blog/forum). Artikel yang mengutip sumber lain tidak dihitung sebagai sumber independen.
 - **FR-FC-01 (P0)** Ekstrak klaim faktual dari naskah (tanggal, angka, nama, hubungan sebab-akibat).
 - **FR-FC-02 (P0)** Klaim kritis butuh ≥ 2 sumber independen agar `terverifikasi`.
-- **FR-FC-03 (P0)** Episode **tidak bisa** masuk G1 kalau masih ada klaim kritis `belum terverifikasi`, kecuali owner override secara eksplisit (tercatat di audit log).
+- **FR-FC-02a (P0)** Setiap klaim masuk satu kategori: **fakta terverifikasi**, **interpretasi**, **hipotesis**, **diperdebatkan**, atau **belum terverifikasi**. Riset dengan < 3 fakta terverifikasi tidak lanjut ke naskah.
+- **FR-FC-03 (P0)** Naskah **tidak boleh** memakai klaim `belum terverifikasi`. Naskah yang melanggar tidak bisa masuk G1, kecuali owner override secara eksplisit dengan alasan (tercatat di audit log dan terlihat di kartu G1). Klaim yang belum terverifikasi boleh tetap ada di brief sebagai pertanyaan terbuka.
 - **FR-FC-04 (P0)** Klaim `diperdebatkan` wajib ditulis dengan bahasa yang jujur ("menurut sebagian sejarawan…").
 
 ### 7.4 Script & storyboard
 
-- **FR-SC-01 (P0)** Durasi target 30–180 detik; jumlah kata dihitung otomatis.
+- **FR-SC-01 (P0)** Durasi target mengikuti format (Quick Files / The Archives / Deep Files); durasi narasi dihitung dari jumlah kata ÷ kecepatan baca (default 150 kata/menit, bisa diatur).
+- **FR-SC-01a (P0)** Struktur naskah wajib: hook → konteks → konflik/pertanyaan → penjelasan → penutup. Setiap kalimat faktual merujuk ke klaim di brief.
+- **FR-SC-01b (P0)** Editorial gate otomatis sebelum G1: memeriksa rujukan klaim, angka, bahasa untuk klaim yang diperdebatkan/hipotesis, panjang, gaya sensasional, kutipan panjang, dan salinan teks sumber. Gagal → AI merevisi sekali → kalau masih gagal, episode berhenti dengan laporan revisi. **AI tidak bisa approve G1.**
 - **FR-SC-02 (P0)** Naskah berversi; revisi membuat versi baru, versi lama tetap tersimpan.
 - **FR-SB-01 (P0)** Total durasi shot = durasi narasi ± 1 detik.
 - **FR-SB-02 (P0)** Durasi shot video AI di-"snap" ke durasi yang didukung model (misal 5/10 detik).

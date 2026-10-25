@@ -37,5 +37,13 @@ class Settings(BaseSettings):
         return self.config_dir / "pricing.yaml"
 
     @property
+    def llm_config_path(self) -> Path:
+        return self.config_dir / "llm.yaml"
+
+    @property
+    def editorial_config_path(self) -> Path:
+        return self.config_dir / "editorial.yaml"
+
+    @property
     def owner_id_set(self) -> frozenset[str]:
         return frozenset(part.strip() for part in self.owner_ids.split(",") if part.strip())

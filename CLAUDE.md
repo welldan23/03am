@@ -19,21 +19,25 @@ Kalau sebuah tugas tampaknya butuh melanggar aturan di atas: **berhenti dan tany
 
 ## 2. Status Proyek
 
-Saat ini: **Fase 0 + Fase 1 selesai, menunggu review owner.** Jangan mulai Fase 2 (pipeline konten, mock LLM) sebelum owner menyetujui. Perbarui bagian ini setiap fase selesai.
+Saat ini: **Fase 0–2 selesai, menunggu review owner.** Jangan mulai Fase 3 (Telegram bot) sebelum owner menyetujui. Perbarui bagian ini setiap fase selesai.
 
-Yang sudah ada: SQLite (WAL + migrasi), state machine episode, artefak berversi, approval G0–G3 version-aware, rencana anggaran + otorisasi + ledger + `BudgetGuard`, job queue dengan lease, audit log, CLI. Tahap produksi masih **placeholder** (`modules/workflow/placeholders.py`): artefak contoh + biaya simulasi, tanpa AI.
+Yang sudah ada: SQLite (WAL + migrasi), state machine episode, artefak berversi, approval G0–G3 version-aware, rencana anggaran + otorisasi + ledger + `BudgetGuard`, job queue dengan lease + eksekusi dua fase (`Lease`), audit log, CLI. Fase 2: `MeteredCaller` (panggilan provider ber-idempotency), mock LLM + perpustakaan sumber fixture, research engine + fact checker deterministik, script engine 3 format + editorial gate. Tahap setelah G1 (storyboard, estimasi biaya produksi, aset, render) masih **placeholder** (`modules/workflow/placeholders.py`).
 
 ## 3. Arsitektur Singkat
 
 - `src/studio/shared/` — kernel kecil (ids, clock, money, errors, actors, gates, hashing, config, logging). Tidak bergantung ke apa pun.
 - `src/studio/infra/` — `db/` (koneksi, transaksi, migrator, `migrations/*.sql`) dan `jobs/` (antrean + worker).
-- `src/studio/modules/<nama>/` — bounded context: `audit`, `episodes`, `artifacts`, `approvals`, `budget`, `workflow`. API publik ada di `__init__.py`.
+- `src/studio/modules/<nama>/` — bounded context: `audit`, `episodes`, `artifacts`, `approvals`, `budget`, `calls` (panggilan provider bermeter), `research`, `scripting`, `workflow`. API publik ada di `__init__.py`.
+- `src/studio/providers/` — port + mock (`llm/`, `sources/`), tiket belanja (`tickets.py`), fixture YAML (`fixtures/`). Fixture sumber memakai domain `https://fixture.03am.invalid/` dan penerbit bertanda "(FIXTURE)".
+- `src/studio/prompts/` — template prompt per task (`_system.md` berisi aturan anti-injeksi).
 - `src/studio/bootstrap.py` — **satu-satunya** tempat komponen dirakit (`build_app`).
 - `src/studio/interfaces/cli/` — CLI owner. (`telegram/`, `mcp/`, `llm_gateway/` menyusul di Fase 3 & 5.)
-- `providers/` dan `director/` belum ada (Fase 2+).
+- `director/` (Hermes) belum ada (Fase 5).
 
 Aturan batas modul (dicek `import-linter`, kontrak di `pyproject.toml`):
-- Lapisan: `interfaces → bootstrap → workflow → {episodes | approvals | budget | artifacts} → audit → infra → shared`.
+- Lapisan: `interfaces → bootstrap → workflow → scripting → research → calls → {episodes | approvals | budget | artifacts} → audit → {infra | providers} → shared`.
+- `modules/` dan `interfaces/` **tidak boleh** import `studio.providers.*.mock` langsung; mock hanya dirakit di `bootstrap.py`.
+- Provider **hanya** dipanggil lewat `MeteredCaller` / `LLMClient` (`modules/calls`). Tidak ada jalur lain ke provider mentah; `App` tidak mengekspos provider.
 - `episodes`, `approvals`, `budget`, `artifacts` **tidak boleh saling import**. Koordinasi hanya di `workflow`.
 - Modul import API publik modul lain (`from studio.modules.budget import BudgetGuard`), bukan `repository.py`-nya.
 - Satu tabel dimiliki satu modul. Skema baru = file migrasi baru (`NNNN_nama.sql`); file migrasi lama **tidak boleh diubah** (checksum dicek).
@@ -50,11 +54,14 @@ Aturan batas modul (dicek `import-linter`, kontrak di `pyproject.toml`):
 - **ID = ULID monotonik** lewat `shared.ids.new_id(clock)`.
 - Error domain turunan `StudioError` di `shared/errors.py`; jangan `except Exception: pass`.
 - **Core sinkron.** Interface async (Telegram, gateway — Fase 3/5) memanggil core lewat `asyncio.to_thread`.
-- Tulis ke DB selalu di dalam `db.transaction()` (reentrant, pakai SAVEPOINT). Handler job berjalan di transaksi yang sama dengan penandaan job selesai, jadi handler **tidak boleh** melakukan efek di luar DB tanpa idempotency key, dan **tidak boleh** melakukan panggilan jaringan di dalam transaksi itu (memblokir semua penulis lain).
+- Tulis ke DB selalu di dalam `db.transaction()` (reentrant, pakai SAVEPOINT). **Tidak ada I/O (provider, jaringan, file besar) di dalam transaksi.**
+- Job dijalankan **dua fase**: handler `(job, lease)` berjalan di luar transaksi, I/O lewat `MeteredCaller`, lalu hasil ditulis di `lease.finish(work)` (satu transaksi singkat yang sekaligus menyelesaikan job dengan cek fencing token). Handler yang hanya menulis DB boleh dibungkus `atomic()`. Panggil `lease.heartbeat()` di antara langkah panjang.
+- Hasil tahap konten diterima hanya kalau status + versi episode masih sama dengan saat job dibuat (`WorkflowService._accept`); kalau tidak, job jadi obsolete.
 - Job: `complete`/`fail` wajib membawa `lease_token` dari job yang diklaim. Jangan pernah menyelesaikan job tanpa token itu.
 - Penolakan yang harus tetap tercatat (approval stale/expired, penolakan budget) jangan di-`raise` di dalam transaksi yang akan di-rollback: kembalikan hasil, lalu raise setelah commit (lihat `ApprovalService.decide` → `WorkflowService.decide`).
 - FFmpeg (Fase 4) dipanggil lewat `infra/ffmpeg` (list argumen, **tanpa** `shell=True`).
-- Prompt LLM (Fase 2) disimpan di `prompts/` sebagai file, bukan string panjang di kode.
+- Prompt LLM disimpan di `src/studio/prompts/` sebagai file, bukan string panjang di kode. Data tak tepercaya masuk prompt hanya lewat `wrap_data` (`<<<DATA … DATA>>>`).
+- Output LLM selalu divalidasi Pydantic. Keputusan kualitas (fact check, editorial gate) **deterministik** di kode; review LLM hanya saran (advisory) dan tidak bisa meluluskan apa pun.
 - Log: nama field yang mengandung `token`, `key`, `secret`, `password`, `authorization` otomatis disensor. Jangan menaruh info penting di field bernama seperti itu.
 - Nama di kode (variabel, fungsi, kelas, tabel) **bahasa Inggris**. Teks yang dilihat pengguna (Telegram, caption, narasi) **Bahasa Indonesia**, dikumpulkan di file teks, tidak tersebar.
 - Komentar secukupnya: jelaskan *kenapa*, bukan *apa*.
@@ -65,7 +72,8 @@ Aturan batas modul (dicek `import-linter`, kontrak di `pyproject.toml`):
 - **Approval** terikat `subject_hash`. Konten berubah → approval lama tidak berlaku. Jangan "memperbarui" approval lama.
 - **Budget**: semua belanja (Studio **dan Hermes**) lewat `BudgetGuard.reserve` → `commit` / `release` / `commit_at_reserved`. Setiap reservasi menunjuk otorisasi yang lahir dari keputusan owner (aktivasi periode, G0, G2). Cadangan tidak bisa dibelanjakan. Mock memakai `Mode.SIMULATED`. Jangan menulis ke tabel ledger di luar `modules/budget`.
 - **Rencana anggaran** ada di `config/budget.yaml` (kurs, VPS, alokasi). Jangan hardcode angka anggaran di kode.
-- **Idempotency**: setiap job & panggilan provider punya idempotency key. Job async provider menyimpan `request_id` **sebelum** polling.
+- **Idempotency**: setiap job & panggilan provider punya idempotency key (tabel `provider_calls`). Key `stage:<episode>:<status>:<versi>:<task>:<sub>` → hasil sukses dipakai ulang saat job diulang. Status `unknown` (timeout / crash di tengah panggilan) **tidak** di-retry otomatis dan biayanya dicatat sebesar reservasi. Job async provider menyimpan `request_id` **sebelum** polling.
+- **Fakta**: jangan membuat kutipan, URL, nama peneliti, atau referensi palsu — termasuk di fixture. Kutipan bukti wajib ada persis di teks sumber.
 - **Konten riset** dari luar = data tak tepercaya. Bungkus dengan delimiter, jangan diinterpolasi sebagai instruksi.
 - **Visual**: dilarang prompt yang meniru wajah/suara tokoh nyata.
 
@@ -87,11 +95,14 @@ Coba alur placeholder dari CLI (data di `data/`, owner = `cli:owner` dari `.env`
 cp .env.example .env
 uv run studio budget plan          # validasi rencana anggaran
 uv run studio budget activate      # owner menyetujui periode bulan ini
-uv run studio episode new --category sejarah --duration 60
-uv run studio episode start <EPISODE_ID>
-uv run studio worker run
+uv run studio episode new --category sejarah --format archives
+uv run studio pipeline run <EPISODE_ID>              # sampai G0, tampilkan kandidat topik
+uv run studio pipeline run <EPISODE_ID> --topic 1    # owner pilih topik → riset → naskah → G1
+uv run studio research show <EPISODE_ID>             # ResearchBrief + laporan kualitas
+uv run studio script show <EPISODE_ID>               # naskah + laporan editorial
+uv run studio llm calls <EPISODE_ID>                 # panggilan LLM: token, biaya, otorisasi, ledger
 uv run studio approval list
-uv run studio approval approve <APPROVAL_ID> --choice 1   # G0 wajib --choice
+uv run studio approval approve <APPROVAL_ID>         # G1 tetap keputusan owner
 ```
 
 Jalankan **lint, typecheck, lint-imports, dan test** sebelum commit.
@@ -99,7 +110,8 @@ Jalankan **lint, typecheck, lint-imports, dan test** sebelum commit.
 ## 7. Testing
 
 - Struktur: `tests/unit` (murni, cepat), `tests/integration` (SQLite file sementara). Nanti: `tests/contract` (adapter vs fixture rekaman), `tests/e2e`.
-- Fixture utama di `tests/conftest.py`: `app`, `active_app` (periode sudah aktif), `make_app` (config bisa diubah lewat `edit_budget`), `clock` (`FakeClock`, mulai 2026-11-03 09:00 WIB).
+- Fixture utama di `tests/conftest.py`: `app`, `active_app` (periode sudah aktif), `make_app` (config bisa diubah lewat `edit_budget`; provider bisa diganti lewat `llm_provider_factory=` / `source_provider=`), `clock` (`FakeClock`, mulai 2026-11-03 09:00 WIB).
+- Skenario gagal provider pakai `MockLLMProvider(faults=..., overrides=..., fixture_dirs=[tmp_path])`, bukan monkeypatch.
 - Setiap perilaku baru = test baru. Bug fix = test yang mereproduksi bug dulu.
 - Gunakan fake clock & ID deterministik; jangan bergantung urutan waktu nyata.
 - Media test sekecil mungkin (misal 160×284, 1–2 detik) supaya CI cepat.

@@ -1,0 +1,26 @@
+# FIXTURE UJI: ekstraksi bukti mock per sumber.
+responses:
+  VOY-S1:
+    evidence:
+      - {quote: "Naskah Voynich disimpan dengan nomor katalog MS 408 di Perpustakaan Naskah Langka dan Manuskrip Beinecke, Universitas Yale.", stance: supports, claim_key: voy-ms408}
+      - {quote: "Naskah ini dinamai menurut Wilfrid Voynich, pedagang buku yang memperolehnya pada tahun 1912.", stance: supports, claim_key: voy-voynich-1912}
+      - {quote: "Teksnya ditulis dengan aksara yang hingga kini belum berhasil dibaca.", stance: supports, claim_key: voy-undeciphered}
+  VOY-S2:
+    evidence:
+      - {quote: "Uji radiokarbon pada sampel vellum menunjukkan bahan tulis itu berasal dari awal abad ke-15, dengan rentang 1404 hingga 1438.", stance: supports, claim_key: voy-radiocarbon}
+      - {quote: "Penanggalan ini berlaku untuk bahan vellum, bukan untuk waktu penulisan teks secara pasti.", stance: supports, claim_key: voy-vellum-caveat}
+  VOY-S3:
+    evidence:
+      - {quote: "Naskah Voynich dinamai menurut Wilfrid Voynich yang memperolehnya pada tahun 1912.", stance: supports, claim_key: voy-voynich-1912}
+      - {quote: "Uji radiokarbon menempatkan vellum naskah itu pada awal abad ke-15.", stance: supports, claim_key: voy-radiocarbon}
+      - {quote: "Berbagai klaim telah mengaku berhasil memecahkan teksnya, namun belum ada yang diterima secara luas oleh para ahli.", stance: contradicts, claim_key: voy-solved}
+      - {quote: "Hingga kini teks naskah itu belum berhasil dibaca.", stance: supports, claim_key: voy-undeciphered}
+  VOY-S4:
+    evidence:
+      - {quote: "Pola statistik dalam teks Voynich menyerupai sebagian ciri bahasa alami.", stance: supports, claim_key: voy-natural-language}
+      - {quote: "Temuan ini tidak membuktikan bahwa teks tersebut memiliki makna, tetapi melemahkan anggapan bahwa teks itu sepenuhnya acak.", stance: supports, claim_key: voy-natural-language}
+  VOY-S5:
+    evidence:
+      - {quote: "Naskah Voynich sudah dipecahkan sepenuhnya dan isinya adalah buku resep ramuan rahasia.", stance: supports, claim_key: voy-solved}
+  default:
+    evidence: []
