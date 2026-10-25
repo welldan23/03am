@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| Status | Draft v0.1 — menunggu review |
-| Dokumen terkait | [PRD.md](PRD.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · [RISKS.md](RISKS.md) |
+| Status | Draft v0.2 — Fase 0+1 dikerjakan bersama; spike Hermes dipindah ke awal Fase 5 |
+| Dokumen terkait | [PRD.md](PRD.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · [RISKS.md](RISKS.md) · [ADR](adr/README.md) |
 
 ## Aturan Main Semua Fase
 
@@ -11,226 +11,217 @@
 - **Tidak ada API berbayar** sampai owner memberi izin tertulis (lihat Fase 6).
 - Semua integrasi luar memakai **mock** sebagai default.
 - Tiap fase selesai = semua acceptance criteria (AC) lulus + CI hijau + dokumen terkait diperbarui + direview owner.
-- Fase dikerjakan berurutan. Fase berikut baru dimulai setelah owner menyetujui fase sebelumnya.
+- Fase berikut baru dimulai setelah owner menyetujui fase sebelumnya.
+- Tidak ada merge ke branch lain tanpa persetujuan owner.
 
 ## Peta Fase
 
-| Fase | Nama | Hasil utama | Butuh biaya? |
+| Fase | Nama | Hasil utama | Status |
 |---|---|---|---|
-| 0 | Fondasi & spike | Repo skeleton, CI, spike Hermes (lokal, tanpa biaya) | Tidak |
-| 1 | Inti domain | Episode + state machine, approval, budget ledger, job queue, CLI | Tidak |
-| 2 | Pipeline konten (mock LLM) | Discovery → research → fact check → script → storyboard | Tidak |
-| 3 | Telegram Studio Bot | Approval G0–G3 lewat tombol, status, budget | Tidak (bot Telegram gratis) |
-| 4 | Aset, TTS, render, ekspor (mock) | Video MP4 utuh dari aset mock + paket ekspor | Tidak |
-| 5 | Hermes AI Director | MCP server studio + skill Director + Director Bot | Tidak (LLM Hermes diarahkan ke endpoint mock) |
-| 6 | Adapter provider asli (dimatikan) | Adapter OpenAI, Higgsfield, TTS + contract test | Tidak; uji berbayar **hanya** dengan izin owner |
-| 7 | Kesiapan production (tanpa deploy) | Runbook VPS, backup, monitoring, hardening | Tidak |
+| 0 | Fondasi | Tooling, CI, `shared/` | ✅ selesai (bersama Fase 1) |
+| 1 | Inti domain | State machine, approval, budget, ledger, job queue, audit, CLI | ✅ selesai — **menunggu review owner** |
+| 2 | Pipeline konten (mock LLM) | Discovery → research → fact check → script → storyboard | Belum dimulai |
+| 3 | Telegram Studio Bot (1 bot) | Approval G0–G3 lewat tombol, status, budget | Belum |
+| 4 | Aset, TTS, render, ekspor (mock) | MP4 utuh dari aset mock + paket ekspor + benchmark render | Belum |
+| 5 | Hermes AI Director | Spike → gateway metering → MCP server → Director di bot yang sama | Belum |
+| 6 | Adapter provider asli (default mati) | Adapter OpenAI, Higgsfield, TTS + contract test | Belum |
+| 7 | Kesiapan production (tanpa deploy) | Runbook VPS, backup, monitoring, hardening | Belum |
 
-Status MVP = Fase 0–5 selesai: satu episode bisa dibuat lengkap lewat Telegram dengan mock, biaya nyata Rp0.
+MVP = Fase 0–5 selesai: satu episode bisa dibuat lengkap lewat Telegram dengan mock, biaya nyata Rp0.
 
 ---
 
-## Fase 0 — Fondasi & Spike
-
-**Tujuan:** proyek siap dikerjakan dengan disiplin sejak hari pertama, dan asumsi terbesar (Hermes) sudah diuji.
+## Fase 0 — Fondasi
 
 **Pekerjaan**
-- `pyproject.toml` (uv), struktur folder sesuai ARCHITECTURE §4, `src/studio/__main__.py`.
-- Tooling: ruff, mypy, pytest (+ `pytest-socket` untuk blokir jaringan), import-linter.
-- `shared/`: config (pydantic-settings), logging (structlog + redaksi secret), ids (ULID), clock, money.
-- `.env.example`, `.gitignore` (`data/`, `.env`), README.
-- CI GitHub Actions: lint, format check, typecheck, test.
-- **Spike Hermes** (`docs/spikes/hermes.md`): install di container, sambungkan ke MCP server dummy (1 tool `ping`), arahkan LLM ke endpoint OpenAI-compatible **mock lokal**, catat versi, RAM, cara matikan toolset berbahaya, cara allowlist tool MCP, dan apakah dua bot Telegram berjalan bersamaan tanpa konflik.
-- **Spike Higgsfield (baca saja)** (`docs/spikes/higgsfield.md`): catat endpoint model kandidat, payload, durasi/rasio yang didukung, alur upload, harga, ToS — **tanpa** membuat API key berbayar.
-- ADR-0001 s/d ADR-0008 ditulis singkat di `docs/adr/`.
+- `pyproject.toml` (uv), struktur folder (ARCHITECTURE §4), `python -m studio`.
+- Tooling: ruff, mypy (strict untuk `src/`), pytest + `pytest-socket` + hypothesis, import-linter.
+- `shared/`: config, logging (redaksi secret), ids (ULID), clock, money, actors, errors.
+- `.env.example`, `.gitignore`, README, CI GitHub Actions (Python 3.12 & 3.13).
 
 **Acceptance Criteria**
-- [ ] AC0.1 `uv sync` lalu `uv run pytest` lulus di mesin bersih (Python 3.12 dan 3.13).
-- [ ] AC0.2 `uv run ruff check`, `uv run ruff format --check`, `uv run mypy src`, `uv run lint-imports` semua lulus.
-- [ ] AC0.3 CI hijau di GitHub untuk commit terakhir.
-- [ ] AC0.4 Test yang mencoba akses jaringan otomatis gagal (dibuktikan dengan satu test negatif).
-- [ ] AC0.5 Logger tidak pernah mencetak nilai env yang namanya mengandung `TOKEN`, `KEY`, `SECRET` (ada test).
-- [ ] AC0.6 `python -m studio --help` jalan.
-- [ ] AC0.7 `docs/spikes/hermes.md` menjawab: versi, cara pasang MCP, cara allowlist tool, cara matikan terminal/file tool, RAM idle, hasil uji dua bot, dan rekomendasi final Opsi A/B.
-- [ ] AC0.8 `docs/spikes/higgsfield.md` berisi tabel model kandidat (endpoint, durasi, rasio, harga, `verified_at`) dan ringkasan ToS.
-- [ ] AC0.9 Tidak ada API key berbayar yang dibuat atau dipakai.
+- [x] AC0.1 `uv sync` lalu `uv run pytest` lulus (Python 3.12 dan 3.13).
+- [x] AC0.2 `ruff check`, `ruff format --check`, `mypy src`, dan `lint-imports` semua lulus.
+- [ ] AC0.3 CI hijau di GitHub untuk commit terakhir (workflow sudah dibuat, menunggu run pertama).
+- [x] AC0.4 Test yang mencoba akses jaringan otomatis gagal (ada test negatif).
+- [x] AC0.5 Logger tidak pernah mencetak nilai dengan nama kunci mengandung `token`, `key`, `secret`, `password` (ada test).
+- [x] AC0.6 `python -m studio --help` jalan.
+- [x] AC0.7 Tidak ada API key berbayar yang dibuat atau dipakai.
 
 ---
 
 ## Fase 1 — Inti Domain
 
-**Tujuan:** tulang punggung yang menjamin aturan bisnis: status, approval, uang, job.
-
 **Pekerjaan**
-- `infra/db`: koneksi SQLite (WAL, `busy_timeout`, foreign keys), migrator SQL bernomor, unit of work.
-- `modules/episodes`: agregat Episode, tabel transisi, `episode_events`.
-- `modules/approvals`: gate G0–G3, `subject_hash`, token sekali pakai, cek `actor`.
-- `modules/budget`: `pricing.yaml` loader, estimator, ledger (reserve/commit/release), batas per episode/bulan/provider, kill switch.
-- `infra/jobs`: antrean dengan lease, retry + backoff, idempotency key.
-- `modules/workflow`: event → enqueue job; gate = berhenti.
-- `interfaces/cli`: `studio episode new|show|list`, `studio approve <gate> <episode>`, `studio budget`, `studio worker`.
+- `infra/db`: koneksi SQLite (WAL, `foreign_keys`, `busy_timeout`), transaksi reentrant (savepoint), migrator SQL dengan checksum.
+- `modules/audit`: audit log append-only.
+- `modules/episodes`: agregat + tabel transisi + optimistic locking.
+- `modules/artifacts`: konten berversi + hash.
+- `modules/approvals`: gate G0–G3, `subject_hash`, token sekali pakai, cek actor, kedaluwarsa.
+- `modules/budget`: `BudgetPlan` dari `config/budget.yaml`, tabel harga, estimator, periode, otorisasi, ledger, `BudgetGuard`, usulan realokasi VPS.
+- `infra/jobs`: antrean dengan lease, backoff, dead-letter, idempotency key.
+- `modules/workflow`: orkestrasi + handler placeholder (artefak contoh + biaya simulasi).
+- `interfaces/cli`: perintah owner untuk menguji semuanya.
 
 **Acceptance Criteria**
-- [ ] AC1.1 Semua transisi legal di tabel transisi punya test; transisi ilegal melempar `IllegalTransition` (test berbasis tabel).
-- [ ] AC1.2 Setiap transisi menulis tepat satu baris `episode_events` dengan actor, waktu UTC, status lama/baru.
-- [ ] AC1.3 Approval dengan `subject_hash` lama ditolak setelah konten berubah.
-- [ ] AC1.4 Token approval yang sudah dipakai atau kedaluwarsa ditolak.
-- [ ] AC1.5 Actor bertipe `director`/`system` **tidak bisa** approve gate mana pun (test).
-- [ ] AC1.6 `BudgetGuard.reserve` menolak bila: kill switch mati untuk provider berbayar, tidak ada approval G2 yang valid, sisa approval kurang, batas bulanan terlampaui, atau batas provider terlampaui — masing-masing punya test.
-- [ ] AC1.7 Ledger konsisten: total `COMMITTED + RESERVED` tidak pernah > batas (property-based test dengan Hypothesis).
-- [ ] AC1.8 Uang selalu integer; tidak ada `float` di modul budget (cek mypy/ruff rule atau test).
-- [ ] AC1.9 Worker yang di-kill di tengah job: job diambil ulang setelah lease habis dan tidak dieksekusi dua kali untuk idempotency key yang sama.
-- [ ] AC1.10 Revisi naskah setelah `COST_APPROVED` membatalkan approval G2 dan mengembalikan episode ke tahap yang benar.
-- [ ] AC1.11 CLI bisa membawa episode dari `DRAFT` sampai `AWAITING_EDITORIAL` dengan handler job dummy.
+
+*State machine & audit*
+- [x] AC1.1 Semua transisi legal di tabel transisi dites; transisi ilegal melempar `IllegalTransition`.
+- [x] AC1.2 Setiap transisi menulis tepat satu entri audit `episode.transition` (actor, waktu UTC, status lama/baru, versi).
+- [x] AC1.3 Audit log append-only: `UPDATE`/`DELETE` ditolak database.
+- [x] AC1.4 Migrasi: WAL & foreign keys aktif; dijalankan ulang tidak mengubah apa pun; file migrasi yang diubah setelah diterapkan terdeteksi.
+
+*Approval*
+- [x] AC1.5 Approval dengan `subject_hash` atau versi episode yang sudah berubah ditolak dan jadi `superseded`.
+- [x] AC1.6 Token approval yang sudah dipakai, sudah diganti, atau kedaluwarsa ditolak.
+- [x] AC1.7 Actor `director`/`system`, atau owner yang tidak ada di allowlist, **tidak bisa** memutuskan gate mana pun atau mengaktifkan anggaran.
+- [x] AC1.8 Keputusan ganda pada approval yang sama hanya diproses sekali.
+
+*Anggaran*
+- [x] AC1.9 `config/budget.yaml` bawaan valid: kurs 17.850, VPS = Rp169.575, total = Rp500.000. Kurs bisa diubah lewat config, dan rencana yang melewati batas membuat semua reservasi ditolak.
+- [x] AC1.10 VPS aktual ≠ rencana → rencana "perlu dihitung ulang" dan aktivasi berbayar ditolak. Usulan realokasi memakai cadangan dulu dan totalnya tidak melewati batas.
+- [x] AC1.11 `BudgetGuard.reserve` menolak (masing-masing dites): mode real saat kill switch mati, rencana tidak valid, periode tidak aktif, otorisasi tidak aktif/kurang, alokasi kategori kurang, total kurang. Setiap penolakan tercatat di audit.
+- [x] AC1.12 Property test (hypothesis): pemakaian (committed + reserved) tidak pernah melewati alokasi kategori maupun batas otorisasi.
+- [x] AC1.13 Setiap estimasi & entri ledger menyimpan kurs dan versi harga; uang selalu integer (test AST: tidak ada `float` di modul budget).
+- [x] AC1.14 Pemakaian Hermes (percakapan, tool call, retry) tercatat dengan `source=hermes`, memotong alokasi `openai` yang sama dengan Studio, dan ditolak saat habis.
+- [x] AC1.15 Approve G2 ditolak kalau batas produksi melebihi sisa alokasi.
+
+*Job queue & workflow*
+- [x] AC1.16 Worker crash di tengah job: setelah lease habis job diambil ulang, dan efeknya (artefak, ledger, transisi) tidak terjadi dua kali.
+- [x] AC1.17 Worker yang lease-nya sudah diambil worker lain tidak bisa menandai job selesai.
+- [x] AC1.18 Error berulang → backoff → `FAILED`; `retry` melanjutkan dari status yang gagal. Error budget langsung `FAILED` tanpa retry.
+- [x] AC1.19 Job yang usang (episode sudah direvisi/dibatalkan) ditandai `obsolete` tanpa efek.
+- [x] AC1.20 Revisi di G3 ke `SCRIPTING` menggantikan approval G1 & G2, mencabut otorisasi produksi, dan mengembalikan episode ke `SCRIPTING`.
+- [x] AC1.21 Lewat CLI saja, episode bisa dibawa dari `DRAFT` sampai `EXPORTED` dengan handler placeholder. Semua biaya tercatat sebagai `simulated`, dan biaya `real` = Rp0.
+- [x] AC1.22 `PAID_PROVIDERS_ENABLED=true` membuat aplikasi menolak start.
 
 ---
 
 ## Fase 2 — Pipeline Konten (Mock LLM)
 
-**Tujuan:** tahap 1–5 workflow menghasilkan artefak yang benar strukturnya, tanpa LLM sungguhan.
-
 **Pekerjaan**
-- `providers/llm`: `LLMPort`, `MockLLM`, `LLMRouter` (tier `fast`/`smart`, cache, validasi Pydantic, retry JSON).
-- `providers/sources`: `SourcePort`, `MockSources` dengan 3 topik contoh (1 sejarah, 1 sains, 1 misteri).
-- `prompts/` versi pertama untuk tiap tahap (Bahasa Indonesia).
-- Modul `discovery`, `research`, `factcheck`, `scripting`, `storyboard` + job handler.
-- Style bible awal di `config/styles/`.
+- `providers/llm`: `LLMPort`, `MockLLM`, `LLMRouter` (tier `fast`/`smart`, cache, validasi Pydantic, retry JSON) — semua lewat `BudgetGuard`.
+- `providers/sources`: `SourcePort`, `MockSources` (3 topik contoh).
+- `prompts/` versi pertama (Bahasa Indonesia), style bible di `config/styles/`.
+- Modul `discovery`, `research`, `factcheck`, `scripting`, `storyboard` menggantikan handler placeholder.
 
 **Acceptance Criteria**
-- [ ] AC2.1 Discovery menghasilkan 3–5 kandidat valid (schema) dengan label risiko.
+- [ ] AC2.1 Discovery menghasilkan 3–5 kandidat valid dengan label risiko.
 - [ ] AC2.2 Dossier menyimpan sumber lengkap (URL, judul, penerbit, tanggal akses).
 - [ ] AC2.3 Klaim kritis dengan < 2 sumber independen berstatus `belum terverifikasi`.
-- [ ] AC2.4 Episode dengan klaim kritis `belum terverifikasi` tidak bisa masuk `AWAITING_EDITORIAL`, kecuali override owner yang tercatat.
-- [ ] AC2.5 Naskah untuk target 30/60/180 detik punya jumlah kata dalam rentang ±10% dari `durasi × 2,5`.
-- [ ] AC2.6 Total durasi storyboard = durasi narasi ± 1 detik; durasi shot `ai_video` di-snap ke nilai yang didukung config.
-- [ ] AC2.7 Jumlah shot `ai_video` ≤ batas per episode (default 3).
-- [ ] AC2.8 Output LLM yang rusak (JSON invalid) di-retry 1×, lalu job `FAILED` dengan pesan jelas — tidak crash.
-- [ ] AC2.9 Router memilih tier sesuai tabel tugas; panggilan identik kedua kali diambil dari cache (0 biaya simulasi tambahan).
-- [ ] AC2.10 Fixture sumber yang berisi "instruksi jahat" tidak mengubah perilaku pipeline (test prompt-injection).
-- [ ] AC2.11 Revisi naskah membuat versi baru; versi lama tetap bisa dibaca.
+- [ ] AC2.4 Episode dengan klaim kritis `belum terverifikasi` tidak bisa masuk `AWAITING_EDITORIAL`, kecuali ada override owner yang tercatat.
+- [ ] AC2.5 Jumlah kata naskah untuk target 30/60/180 detik ada dalam ±10% dari `durasi × 2,5`.
+- [ ] AC2.6 Total durasi storyboard = durasi narasi ± 1 detik; durasi `ai_video` di-snap ke nilai yang didukung.
+- [ ] AC2.7 Jumlah shot `ai_video` ≤ batas per episode.
+- [ ] AC2.8 JSON rusak di-retry 1× lalu job `FAILED` dengan pesan jelas.
+- [ ] AC2.9 Router memilih tier sesuai tabel; panggilan identik diambil dari cache tanpa biaya tambahan.
+- [ ] AC2.10 Fixture sumber berisi instruksi jahat tidak mengubah perilaku pipeline.
+- [ ] AC2.11 Biaya pra-produksi per episode tidak melewati batas otorisasi G0.
 
 ---
 
-## Fase 3 — Telegram Studio Bot
-
-**Tujuan:** owner bisa mengendalikan studio dan memberi approval dari Telegram.
+## Fase 3 — Telegram Studio Bot (satu bot)
 
 **Pekerjaan**
-- `interfaces/telegram` dengan aiogram 3: auth allowlist, perintah (`/start`, `/new`, `/status`, `/episodes`, `/budget`, `/cancel`, `/help`), kartu approval + tombol inline, form revisi, notifikasi progres.
-- Semua teks bot di satu file (`texts_id.py`), Bahasa Indonesia santai.
-- Pengujian handler dengan update Telegram palsu (tanpa jaringan).
-- Uji manual opsional dengan bot token asli (gratis) di sesi cloud singkat.
+- `interfaces/telegram` (aiogram 3): auth allowlist, perintah, kartu approval + tombol (token sekali pakai), form revisi, notifikasi.
+- Router update deterministik: callback → approvals, perintah → service, teks bebas → `DirectorPort` (sementara `MockDirector`).
+- Startup memastikan hanya ada satu poller untuk token tersebut (lock file / cek `getWebhookInfo`).
 
 **Acceptance Criteria**
-- [ ] AC3.1 Pesan dari user di luar allowlist diabaikan dan tercatat di log (tanpa membalas isi apa pun).
-- [ ] AC3.2 Kartu G0 menampilkan kandidat topik; memilih satu memindahkan episode ke `TOPIC_SELECTED`.
-- [ ] AC3.3 Kartu G1 menampilkan ringkasan naskah, jumlah shot, dan ringkasan cek fakta; dokumen lengkap terlampir sebagai file.
-- [ ] AC3.4 Kartu G2 menampilkan estimasi per kategori, total Rupiah, kurs, sisa budget bulan ini, dan batas maksimum.
-- [ ] AC3.5 Tombol lama (konten sudah berubah atau token terpakai) membalas "kadaluarsa" dan tidak mengubah apa pun.
-- [ ] AC3.6 Klik ganda pada tombol yang sama hanya diproses sekali.
-- [ ] AC3.7 "Revisi" meminta catatan, lalu membuat versi baru di tahap yang dipilih.
-- [ ] AC3.8 `/budget` menampilkan pemakaian bulan ini (simulasi + nyata dipisah).
-- [ ] AC3.9 Bot tetap responsif saat worker sedang menjalankan job panjang.
+- [ ] AC3.1 Pesan dari user di luar allowlist diabaikan dan tercatat di log.
+- [ ] AC3.2 Kartu G0 menampilkan kandidat topik + batas biaya pra-produksi; memilih satu menjalankan riset.
+- [ ] AC3.3 Kartu G1 menampilkan ringkasan naskah, jumlah shot, dan ringkasan cek fakta; dokumen lengkap dilampirkan.
+- [ ] AC3.4 Kartu G2 menampilkan estimasi per kategori, total Rupiah, kurs, sisa anggaran per kategori, dan batas maksimum.
+- [ ] AC3.5 Tombol lama (konten berubah / token terpakai) membalas "kedaluwarsa" tanpa efek.
+- [ ] AC3.6 Klik ganda hanya diproses sekali.
+- [ ] AC3.7 Callback tombol tidak pernah diteruskan ke Director (test router).
+- [ ] AC3.8 `/budget` menampilkan pemakaian bulan ini: simulasi vs nyata, Studio vs Hermes.
+- [ ] AC3.9 Bot tetap responsif saat worker menjalankan job panjang.
 
 ---
 
 ## Fase 4 — Aset, TTS, Render & Ekspor (Mock)
 
-**Tujuan:** episode menghasilkan video MP4 sungguhan dari aset mock.
-
 **Pekerjaan**
-- `providers/image`, `providers/video`, `providers/tts`: port + mock (lihat ARCHITECTURE §9.3). `MockVideo` meniru status async `queued → in_progress → completed`.
-- `modules/assets`: generate per shot lewat `BudgetGuard`, download, checksum, regenerasi per shot.
-- `modules/voice`: TTS + timing per kalimat.
-- `modules/render`: timeline → `infra/ffmpeg` (Ken Burns, xfade, ducking, loudnorm, subtitle ASS, label AI, preview).
-- `modules/export`: paket ekspor (PRD §7.8).
-- Asset lokal gratis: `text_card` dan `map` sederhana.
+- `providers/image|video|tts`: port + mock. `MockVideo` meniru status async.
+- `modules/assets`, `voice`, `render`, `export`.
+- Skrip benchmark render (`scripts/bench_render.py`) + `docs/benchmarks/`.
 
 **Acceptance Criteria**
-- [ ] AC4.1 Episode mock 30 detik dan 180 detik ter-render menjadi MP4 1080×1920, 30 fps, H.264/AAC (dicek dengan `ffprobe`).
+- [ ] AC4.1 Episode mock 30 detik dan 180 detik ter-render menjadi MP4 1080×1920, 30 fps, H.264/AAC (dicek `ffprobe`).
 - [ ] AC4.2 Durasi video = durasi voice ± 0,5 detik.
-- [ ] AC4.3 Loudness terintegrasi −14 LUFS ± 1 (dicek dengan filter `ebur128`).
-- [ ] AC4.4 Subtitle muncul sesuai timing; tidak ada baris > 42 karakter.
+- [ ] AC4.3 Loudness −14 LUFS ± 1.
+- [ ] AC4.4 Tidak ada baris subtitle > 42 karakter.
 - [ ] AC4.5 Preview ≤ 50 MB untuk video 180 detik.
-- [ ] AC4.6 Tiap panggilan aset melewati `BudgetGuard` dan tercatat di ledger sebagai biaya simulasi.
-- [ ] AC4.7 Worker di-kill saat `MockVideo` berstatus `in_progress`: setelah restart, polling dilanjutkan dengan `request_id` yang sama, tidak submit ulang.
-- [ ] AC4.8 Regenerasi 1 shot tidak memanggil ulang shot lain (dibuktikan dari `provider_calls`).
-- [ ] AC4.9 Ekspor hanya bisa untuk `FINAL_APPROVED`; paket berisi semua file wajib dan `manifest.json` valid.
-- [ ] AC4.10 Test E2E: `DRAFT → EXPORTED` dengan mock penuh dan approval otomatis-test (actor owner palsu) lulus di CI dalam < 3 menit.
-- [ ] AC4.11 Tidak ada kode upload ke platform sosial di mana pun (cek grep/test).
+- [ ] AC4.6 Tiap panggilan aset lewat `BudgetGuard` (mode simulasi).
+- [ ] AC4.7 Worker di-kill saat `MockVideo` `in_progress`: polling dilanjutkan dengan `request_id` yang sama.
+- [ ] AC4.8 Regenerasi 1 shot tidak memanggil ulang shot lain.
+- [ ] AC4.9 Ekspor hanya untuk `FINAL_APPROVED`; paket lengkap dan `manifest.json` valid.
+- [ ] AC4.10 Test E2E `DRAFT → EXPORTED` dengan mock lulus di CI < 3 menit.
+- [ ] AC4.11 Tidak ada kode upload ke platform sosial.
+- [ ] AC4.12 **Benchmark** render 180 detik dijalankan dengan batas 2 CPU, lalu hasilnya dicatat (waktu, preset, RAM). Target ≤ 10 menit adalah **acuan awal**, bukan syarat lulus. Kalau meleset, dicatat bersama rencana penyetelan.
 
 ---
 
 ## Fase 5 — Hermes sebagai AI Director
 
-**Tujuan:** owner bisa ngobrol dengan Director untuk menjalankan dan merevisi produksi, sementara approval tetap di Studio Bot.
-
 **Pekerjaan**
-- `interfaces/mcp`: MCP server stdio dengan tool di ARCHITECTURE §5.4 (`python -m studio mcp`).
-- `hermes/config.example.yaml`: `mcp_servers.studio` + `tools.include` allowlist, toolset berbahaya dimatikan, allowlist Telegram.
-- `hermes/skills/documentary-director/SKILL.md`: peran, gaya bahasa, alur, larangan.
-- `director/`: `DirectorPort` + `MockDirector` dengan perilaku setara.
-- LLM Hermes diarahkan ke endpoint OpenAI-compatible **mock** selama fase ini.
+1. **Spike Hermes** (`docs/spikes/hermes.md`): install versi yang di-pin; uji mode headless (single-query/API lokal) tanpa gateway Telegram; uji MCP stdio + `tools.include`; matikan toolset berbahaya; arahkan `base_url` ke endpoint mock; ukur RAM & token per giliran.
+2. `interfaces/llm_gateway`: gateway OpenAI-compatible lokal dengan metering (ADR-0009), awalnya meneruskan ke `MockLLM`.
+3. `interfaces/mcp`: MCP server stdio (ARCHITECTURE §5.3).
+4. `director/`: `DirectorPort`, `MockDirector`, `HermesDirector` (headless).
+5. `hermes/config.example.yaml` + `hermes/skills/documentary-director/SKILL.md`.
 
 **Acceptance Criteria**
-- [ ] AC5.1 MCP server lulus contract test: tiap tool punya schema input/output, error terstruktur, dan idempoten untuk `client_request_id` yang sama.
-- [ ] AC5.2 Tidak ada tool approve/reject/ubah budget/ekspor di daftar tool MCP (test daftar tool).
-- [ ] AC5.3 `MockDirector` "nakal" yang mencoba memindahkan episode melewati gate gagal dengan error yang jelas.
-- [ ] AC5.4 Hermes (versi yang di-pin) bisa memanggil `studio_create_episode` dan `studio_get_episode` dalam uji manual; hasilnya dicatat di `docs/spikes/hermes.md`.
-- [ ] AC5.5 Permintaan revisi lewat Director menghasilkan versi baru dan memunculkan kartu approval baru di Studio Bot.
-- [ ] AC5.6 Studio Bot dan Director Bot jalan bersamaan tanpa error 409.
-- [ ] AC5.7 Konsumsi token Hermes per episode diukur (via endpoint mock) dan dicatat; proyeksi biaya bulanan masuk PRD §9.
+- [ ] AC5.1 Spike menjawab: versi, mode headless yang dipakai, cara pasang MCP & allowlist, cara matikan toolset berbahaya, RAM, dan token per giliran. Hasilnya menentukan ADR-0005 tetap (satu bot) atau pindah ke rencana cadangan.
+- [ ] AC5.2 Hermes tidak menerima token bot Telegram maupun API key OpenAI (cek config + test startup).
+- [ ] AC5.3 Setiap request LLM Hermes (percakapan, tool call, retry, internal) melewati gateway dan tercatat di ledger dengan `source=hermes`. Request saat budget habis ditolak gateway tanpa diteruskan.
+- [ ] AC5.4 Gateway memaksa batas `max_tokens` dan meng-commit biaya dari `usage`. Timeout setelah request terkirim di-commit sebesar reservasi.
+- [ ] AC5.5 MCP server lulus contract test; tidak ada tool approve/reject/budget/ekspor.
+- [ ] AC5.6 `MockDirector` "nakal" yang mencoba melewati gate gagal.
+- [ ] AC5.7 Teks bebas di Studio Bot dijawab Director; tombol approval tetap ditangani Studio; tidak ada error 409.
+- [ ] AC5.8 Konsumsi token Hermes per episode diukur; proyeksi bulanan dimasukkan ke PRD §9 dan muat dalam alokasi OpenAI Rp60.000.
 
 ---
 
 ## Fase 6 — Adapter Provider Asli (Default Mati)
 
-**Tujuan:** adapter siap pakai, tapi tidak ada uang keluar sampai owner memutuskan.
-
 **Pekerjaan**
-- `providers/llm/openai.py`, `providers/image/higgsfield.py`, `providers/video/higgsfield.py`, `providers/tts/<terpilih>.py`.
-- Contract test dengan fixture respons rekaman (`respx`), tanpa jaringan.
-- Verifikasi ulang `pricing.yaml` (harga, kurs, `verified_at`).
-- Spike TTS Bahasa Indonesia (sampel dari opsi gratis/lokal lebih dulu).
-- **Gate izin berbayar**: dokumen `docs/spikes/paid-smoke-test.md` berisi rencana uji, batas biaya maksimal (misal Rp25.000), dan tanda setuju owner.
+- Adapter OpenAI (dipakai gateway), Higgsfield (gambar/video), TTS terpilih + contract test dengan fixture rekaman.
+- Spike Higgsfield (baca dokumentasi saja): endpoint, durasi/rasio, upload, ToS.
+- Verifikasi ulang `pricing.yaml` dan kurs.
+- **Hitung ulang alokasi** dengan biaya VPS aktual (`studio budget recalc`) dan minta persetujuan owner.
+- Gate izin berbayar: `docs/spikes/paid-smoke-test.md` (rencana, batas biaya, tanda setuju owner).
 
 **Acceptance Criteria**
-- [ ] AC6.1 Dengan `PAID_PROVIDERS_ENABLED=false`, adapter asli tidak pernah terpanggil walau flag provider aktif (test).
-- [ ] AC6.2 Adapter Higgsfield: auth header benar, submit → simpan `request_id` → polling dengan backoff → download → checksum; status `failed`/`blocked`/timeout ditangani (contract test).
-- [ ] AC6.3 Adapter OpenAI: structured output divalidasi; token & biaya tercatat per panggilan.
-- [ ] AC6.4 Setiap adapter punya semaphore konkuren dan backoff untuk 429/5xx.
-- [ ] AC6.5 Host keluar dibatasi allowlist (test request ke host lain ditolak).
+- [ ] AC6.1 Dengan `PAID_PROVIDERS_ENABLED=false`, adapter asli tidak pernah terpanggil.
+- [ ] AC6.2 Adapter Higgsfield: auth benar, submit → simpan `request_id` → polling backoff → download → checksum; `failed`/`blocked`/timeout ditangani.
+- [ ] AC6.3 Adapter OpenAI: structured output divalidasi; token & biaya tercatat.
+- [ ] AC6.4 Semaphore konkuren + backoff untuk 429/5xx.
+- [ ] AC6.5 Host keluar dibatasi allowlist.
 - [ ] AC6.6 `pricing.yaml` terverifikasi < 30 hari; estimator menolak tabel yang lebih tua.
-- [ ] AC6.7 Uji berbayar (jika diizinkan owner) tidak melebihi batas yang disetujui dan hasilnya dicatat; jika tidak diizinkan, fase tetap dianggap selesai tanpa uji ini.
+- [ ] AC6.7 Aktivasi berbayar ditolak sampai `vps.actual_usd` terisi, sama dengan `planned_usd`, dan rencana valid.
+- [ ] AC6.8 Uji berbayar (kalau diizinkan) tidak melewati batas yang disetujui.
 
 ---
 
 ## Fase 7 — Kesiapan Production (Tanpa Deploy)
 
-**Tujuan:** semuanya siap dipindah ke VPS kapan pun owner memutuskan.
-
-**Pekerjaan**
-- Runbook VPS (`docs/RUNBOOK.md`): spesifikasi, instalasi, systemd unit untuk studio, worker, Hermes gateway.
-- Script backup/restore SQLite + `data/episodes`.
-- Health check & laporan harian (Telegram).
-- Retensi data: hapus aset mentah episode yang sudah diekspor > N hari.
-- Review keamanan (secret, allowlist, toolset Hermes, host keluar).
-
 **Acceptance Criteria**
-- [ ] AC7.1 Runbook bisa diikuti dari nol di container bersih sampai studio jalan (diuji di sesi cloud, bukan VPS).
+- [ ] AC7.1 Runbook bisa diikuti dari nol di container bersih.
 - [ ] AC7.2 Backup lalu restore menghasilkan DB & file identik (checksum).
-- [ ] AC7.3 Total RAM studio + Hermes + render 1 job ≤ 3,5 GB (diukur).
-- [ ] AC7.4 Render 180 detik ≤ 10 menit pada batas 2 vCPU (diukur dengan `taskset`/cgroup).
-- [ ] AC7.5 Proyeksi biaya bulanan (VPS + API) ≤ Rp500.000 dan hard cap di config sesuai.
-- [ ] AC7.6 Checklist keamanan lulus dan didokumentasikan.
-- [ ] AC7.7 Deployment tetap **tidak dilakukan** sampai owner memberi perintah terpisah.
+- [ ] AC7.3 RAM studio + Hermes + 1 render ≤ 3,5 GB (diukur).
+- [ ] AC7.4 Benchmark render 180 detik diulang di spesifikasi VPS target, dan hasilnya dibandingkan dengan acuan 10 menit (**bukan jaminan**).
+- [ ] AC7.5 Proyeksi biaya bulanan (VPS aktual + API) ≤ Rp500.000 dan config sesuai.
+- [ ] AC7.6 Checklist keamanan lulus.
+- [ ] AC7.7 Deployment **tidak dilakukan** sampai ada perintah terpisah dari owner.
 
 ---
 
-## Definition of Done (berlaku di semua fase)
+## Definition of Done (semua fase)
 
 - Kode mengikuti `CLAUDE.md`.
 - Test baru untuk setiap perilaku baru; semua test offline.
 - ruff, mypy, import-linter, pytest hijau.
-- Dokumen terkait (PRD/ARCHITECTURE/RISKS/ADR) diperbarui bila ada keputusan baru.
+- Dokumen terkait diperbarui.
 - Tidak ada secret di git, tidak ada panggilan berbayar.

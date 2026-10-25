@@ -2,398 +2,360 @@
 
 | | |
 |---|---|
-| Status | Draft v0.1 — menunggu review |
+| Status | Draft v0.2 — satu bot Telegram, metering token Hermes, desain Fase 1 |
 | Gaya | Modular monolith, ports & adapters (hexagonal) |
-| Dokumen terkait | [PRD.md](PRD.md) · [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) · [RISKS.md](RISKS.md) |
+| Dokumen terkait | [PRD.md](PRD.md) · [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) · [RISKS.md](RISKS.md) · [ADR](adr/README.md) |
 
 ---
 
 ## 1. Prinsip Utama
 
-1. **Manusia pegang kunci.** Approval (topik, editorial, biaya, final) hanya bisa dilakukan lewat jalur deterministik (tombol Telegram dari user di allowlist atau CLI owner). **AI tidak pernah bisa approve**, sekalipun diminta.
+1. **Manusia pegang kunci.** Approval (topik, editorial, biaya, final), aktivasi anggaran, dan otorisasi belanja hanya bisa dilakukan lewat jalur deterministik oleh owner yang ada di allowlist: tombol Telegram atau CLI. **AI tidak pernah bisa approve**, sekalipun diminta.
 2. **SQLite adalah sumber kebenaran.** Status episode ada di database studio, bukan di memori Hermes atau di chat.
 3. **Semua dunia luar lewat port.** LLM, video, gambar, TTS, sumber riset, Telegram, dan Hermes diakses lewat interface (port). Tiap port punya **adapter mock** yang jadi default.
-4. **Uang dijaga di satu tempat.** Semua panggilan berbayar wajib lewat `budget` guard: reservasi dulu, baru panggil.
-5. **Satu proses, banyak modul.** Bukan microservice. Batas modul ditegakkan oleh aturan import (import-linter), bukan oleh jaringan.
+4. **Uang dijaga di satu tempat.** Semua belanja (termasuk token Hermes) lewat `BudgetGuard`: reservasi dulu, baru panggil.
+5. **Satu proses, banyak modul.** Bukan microservice. Batas modul ditegakkan oleh `import-linter`, bukan oleh jaringan.
 6. **Idempoten & bisa dilanjutkan.** Setiap langkah adalah job dengan idempotency key; restart tidak mengulang yang sudah sukses.
 7. **Kecil dan murah.** Harus muat di VPS 2 vCPU / 4 GB bersama Hermes.
 
 ## 2. Gambaran Sistem (Context)
 
 ```
-                        ┌──────────────────────── Telegram ───────────────────────┐
-                        │                                                         │
-                 ┌──────┴───────┐                                        ┌────────┴────────┐
-                 │ Studio Bot   │ approval, status, preview,             │ Director Bot    │
-                 │ (milik 03:AM)│ budget — deterministik                 │ (gateway Hermes)│
-                 └──────┬───────┘                                        └────────┬────────┘
-                        │                                                         │
-┌───────────────────────┼─────────────── 03:AM Studio (Python) ───────┐   ┌───────┴────────┐
-│                       ▼                                             │   │ Hermes Agent   │
-│  interfaces/telegram  interfaces/cli          interfaces/mcp  ◀─────┼───┤ (AI Director)  │
-│          │                 │                        │   MCP stdio   │   │  pakai LLM     │
-│          └────────┬────────┴────────────────────────┘               │   │  murah         │
-│                   ▼                                                 │   └───────┬────────┘
-│        Application services (modules/*)                             │           │
-│   episodes · workflow · discovery · research · factcheck · scripting│           │
-│   storyboard · approvals · budget · assets · voice · render · export│           │
-│                   │                                                 │           │
-│                   ▼                                                 │           │
-│        Ports ──▶ Adapters: mock (default) │ openai │ higgsfield │ tts │           │
-│                   │                                                 │           │
-│        infra: SQLite (WAL) · job queue · file storage · FFmpeg      │           │
-└───────────────────┼─────────────────────────────────────────────────┘           │
-                    ▼                                                             ▼
-        OpenAI API · Higgsfield API · TTS · sumber riset           OpenAI API (LLM Hermes)
-        (DIMATIKAN — mock dulu)                                     (DIMATIKAN — mock dulu)
+                         Telegram (1 bot: "Studio Bot")
+                                     │  hanya Studio yang polling (ADR-0005)
+┌────────────────────────────────────┼──────────── 03:AM Studio (Python) ─────────────────┐
+│                                    ▼                                                    │
+│   interfaces/telegram ── callback tombol ──▶ approvals (deterministik, tanpa LLM)       │
+│          │            ── perintah /status /budget ──▶ application services              │
+│          └─ teks bebas ──▶ DirectorPort ──▶ adapter Hermes (headless) ──┐               │
+│                                                                         │               │
+│   interfaces/cli ──▶ application services                               ▼               │
+│   interfaces/mcp ◀── MCP stdio (tool allowlist, tanpa approval) ── Hermes Agent         │
+│          │                                                       (tanpa token bot,      │
+│          ▼                                                        tanpa API key)        │
+│   modules/*: workflow · episodes · approvals · budget · artifacts · audit · …           │
+│          │                                                              │ LLM request   │
+│          ▼                                                              ▼               │
+│   providers (port) ──▶ mock (default) │ asli (mati)      llm-gateway (metering, ADR-0009)│
+│          │                                                              │               │
+│   infra: SQLite (WAL) · job queue · file storage · FFmpeg               │               │
+└──────────┼──────────────────────────────────────────────────────────────┼───────────────┘
+           ▼                                                              ▼
+   Higgsfield · TTS · sumber riset                           OpenAI API (satu-satunya key)
+   (DIMATIKAN — mock dulu)                                   (DIMATIKAN — mock dulu)
 ```
 
 ## 3. Stack Teknologi
 
 | Area | Pilihan | Alasan |
 |---|---|---|
-| Bahasa | Python 3.12+ | Sesuai target; container dev saat ini 3.13 |
+| Bahasa | Python 3.12+ (dites di 3.12 dan 3.13) | Sesuai target |
 | Paket & env | `uv` + `pyproject.toml` | Cepat, lockfile reproducible |
-| Model data | Pydantic v2, pydantic-settings | Validasi output LLM (JSON schema) + config |
-| Database | SQLite (stdlib `sqlite3`), mode WAL, migrasi SQL bernomor | Nol biaya, cukup untuk 1 owner; tanpa ORM berat |
-| Async | `asyncio`; akses DB lewat `asyncio.to_thread` | Telegram & HTTP async, DB tetap simpel |
-| Telegram | `aiogram` 3.x | Async, inline keyboard, FSM |
-| HTTP | `httpx` + `tenacity` (retry/backoff) | Standar, mudah di-mock (`respx`) |
-| MCP server | SDK resmi `mcp` (FastMCP), transport stdio | Jembatan ke Hermes |
-| Video | FFmpeg ≥ 6 via `subprocess` + command builder sendiri | Kontrol penuh, mudah dites |
-| Log | `structlog` (JSON) | Log terstruktur dengan `episode_id`, `job_id` |
-| Test | `pytest`, `pytest-asyncio`, `respx`, `pytest-socket` | Test tanpa jaringan |
-| Kualitas | `ruff` (lint+format), `mypy` (strict di core), `import-linter` | Menjaga batas modul |
-| ID | ULID | Urut waktu, aman dipakai di nama folder |
+| Model data | Pydantic v2, pydantic-settings | Validasi config & output LLM |
+| Database | SQLite (stdlib `sqlite3`), WAL, migrasi SQL bernomor | Nol biaya, simpel |
+| Concurrency | **Core sinkron**; interface async (Telegram, gateway) memanggil core lewat `asyncio.to_thread` | Core mudah dites; transaksi SQLite jelas |
+| CLI | `argparse` (stdlib) | Tanpa dependensi tambahan |
+| Telegram | `aiogram` 3.x (Fase 3) | Async, inline keyboard |
+| HTTP | `httpx` + `tenacity` (Fase 5–6) | Standar, mudah di-mock (`respx`) |
+| MCP server | SDK resmi `mcp`, transport stdio (Fase 5) | Jembatan ke Hermes |
+| Video | FFmpeg ≥ 6 via `subprocess` (Fase 4) | Kontrol penuh |
+| Log | `structlog` (JSON, redaksi secret) | Log terstruktur |
+| Test | `pytest`, `hypothesis`, `pytest-socket` | Test tanpa jaringan |
+| Kualitas | `ruff`, `mypy --strict`, `import-linter` | Menjaga batas modul |
+| ID | ULID (implementasi kecil di `shared/ids.py`) | Urut waktu |
 
 ## 4. Struktur Repository (Modular Monolith)
 
+Yang bertanda ✅ sudah ada sejak Fase 1. Sisanya rencana.
+
 ```
 03am/
-├── CLAUDE.md                     # aturan engineering untuk Claude Code
-├── README.md
-├── pyproject.toml                # dependensi, ruff, mypy, pytest, import-linter
-├── uv.lock
-├── .env.example                  # daftar env var (tanpa nilai rahasia)
-├── .github/workflows/ci.yml      # lint + typecheck + test (offline)
-│
-├── docs/
-│   ├── PRD.md · ARCHITECTURE.md · DEVELOPMENT_PLAN.md · RISKS.md
-│   ├── adr/                      # Architecture Decision Records (0001-...)
-│   └── spikes/                   # hasil eksperimen (Hermes, Higgsfield, TTS)
-│
+├── CLAUDE.md · README.md · pyproject.toml · uv.lock · .env.example     ✅
+├── .github/workflows/ci.yml                                             ✅
+├── docs/  PRD · ARCHITECTURE · DEVELOPMENT_PLAN · RISKS · adr/          ✅
 ├── config/
-│   ├── studio.example.yaml       # routing model, batas budget, flag provider
-│   ├── pricing.yaml              # tabel harga + verified_at + kurs
-│   └── styles/                   # style bible per kategori (sejarah.yaml, sains.yaml, …)
-│
-├── prompts/                      # template prompt (versi di-git, bukan di kode)
-│   ├── discovery/ · research/ · factcheck/ · script/ · storyboard/
-│
-├── hermes/                       # integrasi AI Director
-│   ├── config.example.yaml       # potongan mcp_servers untuk ~/.hermes/config.yaml
-│   └── skills/documentary-director/SKILL.md
-│
-├── migrations/                   # 0001_init.sql, 0002_….sql
-│
+│   ├── budget.yaml              # kurs, VPS, alokasi, batas               ✅
+│   ├── pricing.yaml             # harga per unit (placeholder)           ✅
+│   └── styles/                  # style bible per kategori                (Fase 2)
+├── prompts/                                                               (Fase 2)
+├── hermes/                      # config contoh + skill Director          (Fase 5)
 ├── src/studio/
-│   ├── __main__.py               # entrypoint: `python -m studio`
-│   ├── bootstrap.py              # composition root: rakit adapter + service
-│   │
-│   ├── shared/                   # kernel kecil, tanpa dependensi ke modul lain
-│   │   ├── ids.py · clock.py · money.py · errors.py · events.py
-│   │   ├── config.py · logging.py
-│   │
+│   ├── __main__.py              # `python -m studio`                      ✅
+│   ├── bootstrap.py             # composition root                        ✅
+│   ├── shared/                  # ids, clock, money, errors, actors,      ✅
+│   │                            # config, logging
 │   ├── infra/
-│   │   ├── db/                   # koneksi, migrator, unit of work
-│   │   ├── jobs/                 # antrean job berbasis SQLite + worker
-│   │   ├── storage/              # layout folder episode, checksum
-│   │   └── ffmpeg/               # runner + command builder
-│   │
-│   ├── modules/                  # satu folder = satu bounded context
-│   │   ├── episodes/             # agregat Episode + state machine
-│   │   ├── workflow/             # orkestrator: event → job berikutnya
-│   │   ├── discovery/
-│   │   ├── research/
-│   │   ├── factcheck/
-│   │   ├── scripting/
-│   │   ├── storyboard/
-│   │   ├── approvals/            # gate G0–G3, token sekali pakai
-│   │   ├── budget/               # estimasi, ledger, guard, batas
-│   │   ├── assets/
-│   │   ├── voice/                # TTS + timing subtitle
-│   │   ├── render/               # timeline → perintah FFmpeg
-│   │   └── export/
-│   │
-│   ├── providers/                # port + adapter integrasi luar
-│   │   ├── llm/                  # ports.py · router.py · mock.py · openai.py
-│   │   ├── image/                # ports.py · mock.py · higgsfield.py
-│   │   ├── video/                # ports.py · mock.py · higgsfield.py
-│   │   ├── tts/                  # ports.py · mock.py · (openai.py / lokal)
-│   │   └── sources/              # ports.py · mock.py · wikipedia.py
-│   │
-│   ├── director/                 # port DirectorPort + MockDirector
-│   │
+│   │   ├── db/                  # koneksi, transaksi, migrator, migrations/*.sql  ✅
+│   │   ├── jobs/                # antrean + worker dengan lease            ✅
+│   │   ├── storage/ · ffmpeg/                                             (Fase 4)
+│   ├── modules/
+│   │   ├── audit/               # audit log append-only                    ✅
+│   │   ├── episodes/            # agregat Episode + state machine          ✅
+│   │   ├── artifacts/           # konten berversi + hash                   ✅
+│   │   ├── approvals/           # gate G0–G3, version-aware, token         ✅
+│   │   ├── budget/              # rencana, harga, estimasi, ledger, guard  ✅
+│   │   ├── workflow/            # orkestrator + handler placeholder        ✅
+│   │   ├── discovery · research · factcheck · scripting · storyboard      (Fase 2)
+│   │   ├── assets · voice · render · export                               (Fase 4)
+│   ├── providers/  llm · image · video · tts · sources                    (Fase 2+)
+│   ├── director/   DirectorPort + MockDirector                            (Fase 5)
 │   └── interfaces/
-│       ├── telegram/             # bot, handlers, keyboards, auth, teks (Bahasa Indonesia)
-│       ├── mcp/                  # MCP server untuk Hermes (allowlist tool)
-│       └── cli/                  # perintah owner: run, approve, budget, export
-│
-└── tests/
-    ├── unit/ · integration/ · contract/ · e2e/
-    └── fixtures/                 # respons provider rekaman, media kecil
+│       ├── cli/                                                           ✅
+│       ├── telegram/                                                      (Fase 3)
+│       └── mcp/ · llm_gateway/                                            (Fase 5)
+└── tests/  unit/ · integration/                                           ✅
+           contract/ · e2e/                                                (Fase 2+)
 ```
 
 ### 4.1 Isi standar satu modul
 
 ```
-modules/scripting/
+modules/approvals/
 ├── __init__.py      # API publik modul (yang boleh di-import modul lain)
-├── models.py        # entity & value object (Pydantic / dataclass)
-├── service.py       # use case (application service)
-├── ports.py         # interface yang dibutuhkan modul (kalau ada)
-├── repository.py    # akses tabel milik modul ini saja
-└── jobs.py          # handler job untuk worker
+├── models.py        # entity & value object
+├── service.py       # use case
+└── repository.py    # akses tabel milik modul ini saja
 ```
 
 ### 4.2 Aturan dependensi (ditegakkan `import-linter`)
 
 ```
-interfaces ──▶ modules ──▶ providers.ports ◀── providers.adapters
-     │             │                 ▲
-     └──▶ bootstrap (satu-satunya yang kenal adapter konkret)
-modules  ──▶ shared, infra
-shared   ──▶ (tidak bergantung ke siapa pun)
+interfaces ─▶ bootstrap ─▶ modules.workflow ─▶ {episodes | approvals | budget | artifacts}
+                                                        ─▶ modules.audit ─▶ infra ─▶ shared
 ```
 
-- Modul hanya boleh import **API publik** modul lain (`from studio.modules.budget import BudgetService`), tidak boleh ke `repository.py` modul lain.
-- Modul **tidak boleh** import adapter konkret (`openai.py`, `higgsfield.py`). Adapter dipasang di `bootstrap.py`.
-- Satu tabel dimiliki satu modul. Modul lain membaca lewat service.
-- `interfaces/mcp` **tidak boleh** import `approvals` untuk aksi approve (hanya baca status).
+- Lapisan atas boleh memakai lapisan bawah, tidak sebaliknya.
+- `episodes`, `approvals`, `budget`, dan `artifacts` **saling independen**. Koordinasi antar-modul hanya terjadi di `workflow`.
+- Modul import API publik modul lain (`from studio.modules.budget import BudgetGuard`), bukan `repository.py`-nya.
+- Adapter konkret hanya dirakit di `bootstrap.py`.
+- `interfaces/mcp` (Fase 5) tidak boleh membuka aksi approve/reject/budget/ekspor.
 
 ## 5. Interface: Telegram & Hermes
 
-### 5.1 Masalah yang harus dipecahkan
+Keputusan: **satu bot Telegram milik Studio** ([ADR-0005](adr/0005-satu-bot-telegram.md)).
 
-Bot Telegram hanya bisa di-poll oleh **satu proses** per token (proses kedua dapat error `409 Conflict`). Hermes punya gateway Telegram sendiri. Jadi kita harus memilih siapa yang memegang bot.
+### 5.1 Ringkasan
 
-### 5.2 Opsi
+- Hanya proses Studio yang polling token bot. Gateway Telegram Hermes **tidak diaktifkan**, jadi konflik polling (409) tidak mungkin terjadi.
+- Update Telegram dibagi deterministik:
+  - **callback tombol** → `approvals` (tidak pernah ke LLM);
+  - **perintah** → service Studio;
+  - **teks bebas** → `DirectorPort` → Hermes headless.
+- Hermes memanggil Studio lewat **MCP stdio** dengan allowlist tool.
+- Hermes tidak memegang API key OpenAI. LLM Hermes lewat **gateway metering** Studio ([ADR-0009](adr/0009-metering-token-llm.md)).
+- Rencana cadangan (kalau mode headless Hermes tidak layak): dua bot dengan token berbeda. Syarat keamanan dan metering tetap sama.
 
-| Opsi | Cara kerja | Plus | Minus |
-|---|---|---|---|
-| **A. Satu bot, milik Studio** | Studio Bot menerima semua pesan; pesan bebas diteruskan ke Hermes dalam mode headless / single-query | Satu chat, UX rapi | Tidak memakai gateway Hermes; integrasi lebih rapuh terhadap perubahan CLI Hermes |
-| **B. Dua bot (rekomendasi)** | **Studio Bot** = approval, status, preview, budget. **Director Bot** = gateway Hermes untuk ngobrol & memberi arahan; Hermes memanggil studio lewat MCP | Approval 100% di luar jalur LLM; memakai Hermes sesuai desainnya; gagal satu tidak merusak yang lain | Owner punya 2 chat |
-| C. Satu bot, milik Hermes | Semua lewat Hermes, approval juga | Paling sederhana | ❌ Approval lewat LLM — melanggar prinsip utama |
+### 5.2 Peran Hermes sebagai AI Director
 
-**Rekomendasi: Opsi B.** Bisa ditaruh di satu grup Telegram privat supaya terasa seperti satu ruang kerja. Keputusan final setelah spike Hermes (Fase 0).
+Hermes **boleh**: membuat episode, meminta kandidat topik, menjalankan tahap berikutnya (enqueue job), membaca status/artefak/estimasi, mengajukan revisi (menghasilkan versi baru), merangkum untuk owner.
 
-### 5.3 Peran Hermes sebagai AI Director
-
-Hermes **boleh**:
-- membuat episode baru, meminta kandidat topik, menjalankan tahap berikutnya (enqueue job);
-- membaca status, naskah, storyboard, laporan fakta, estimasi biaya;
-- mengajukan revisi naskah/storyboard (menghasilkan **versi baru**, bukan menimpa);
-- merangkum dan menjelaskan ke owner.
-
-Hermes **tidak boleh** (tidak diekspos sama sekali di MCP):
-- approve / reject gate mana pun;
-- mengubah batas budget atau kill switch;
-- menjalankan panggilan provider berbayar secara langsung;
-- ekspor atau publikasi.
+Hermes **tidak boleh** (tidak diekspos sama sekali): approve/reject/revisi di gate, mengaktifkan periode anggaran, mengubah batas atau kill switch, memanggil provider berbayar langsung, ekspor/publikasi.
 
 Pertahanan berlapis:
-1. Tool approval **tidak ada** di MCP server studio (bukan sekadar disembunyikan).
-2. Di config Hermes, `mcp_servers.studio.tools.include` berisi allowlist eksplisit.
-3. Service `approvals` memeriksa `actor`: hanya `TelegramUser(id ∈ allowlist)` atau `CliOwner` yang valid.
-4. Toolset berbahaya Hermes (terminal, tulis file, eksekusi kode) dimatikan untuk profil Director; kalau perlu, Hermes jalan di backend Docker.
+1. Tool approval/budget tidak ada di MCP server Studio.
+2. `mcp_servers.studio.tools.include` di config Hermes berisi allowlist eksplisit.
+3. Service `approvals` & `budget` memeriksa `Actor`: hanya `owner` yang ada di `STUDIO_OWNER_IDS`. Actor `director`/`system` selalu ditolak (sudah dites di Fase 1).
+4. Toolset berbahaya Hermes (terminal, tulis file, eksekusi kode) dimatikan; kalau perlu Hermes jalan di backend Docker.
 
-### 5.4 Kontrak MCP (draft)
+### 5.3 Kontrak MCP (draft, Fase 5)
 
 | Tool | Efek | Catatan |
 |---|---|---|
-| `studio_create_episode(category?, idea?)` | buat episode `DRAFT` | idempoten per `client_request_id` |
-| `studio_propose_topics(episode_id)` | enqueue job discovery | |
-| `studio_get_episode(episode_id)` | baca ringkasan + status | read-only |
+| `studio_create_episode(category, duration_s, idea?)` | buat episode `DRAFT` | idempoten per `client_request_id` |
+| `studio_start_episode(episode_id)` | `DRAFT → DISCOVERING` | |
+| `studio_get_episode(episode_id)` | ringkasan + status | read-only |
 | `studio_list_episodes(status?)` | daftar episode | read-only |
-| `studio_get_artifact(episode_id, kind)` | baca naskah/storyboard/fakta/estimasi | read-only |
-| `studio_request_revision(episode_id, stage, notes)` | buat versi baru tahap tsb | tidak melewati gate |
-| `studio_advance(episode_id)` | jalankan tahap berikut **jika** tidak terhalang gate | gate tetap menolak |
+| `studio_get_artifact(episode_id, kind)` | baca artefak | read-only |
+| `studio_suggest_revision(episode_id, notes)` | simpan catatan revisi untuk owner | tidak mengubah status |
 | `studio_budget_summary()` | sisa budget | read-only |
-
-`DirectorPort` di `src/studio/director/` mendefinisikan kemampuan yang sama untuk `MockDirector`, supaya alur bisa dites tanpa Hermes.
 
 ## 6. Model Domain
 
 ### 6.1 Agregat `Episode` & state machine
 
-```
-DRAFT
-  └─▶ TOPICS_PROPOSED ──[G0 pilih]──▶ TOPIC_SELECTED
-        └─▶ RESEARCHING ─▶ FACT_CHECKING ─▶ SCRIPTING ─▶ STORYBOARDING
-              └─▶ AWAITING_EDITORIAL ──[G1]──▶ EDITORIAL_APPROVED
-                    └─▶ COST_ESTIMATED ─▶ AWAITING_COST ──[G2]──▶ COST_APPROVED
-                          └─▶ GENERATING_ASSETS ─▶ GENERATING_VOICE ─▶ RENDERING
-                                └─▶ AWAITING_FINAL ──[G3]──▶ FINAL_APPROVED ─▶ EXPORTED
-
-Dari status mana pun yang aktif:
-  ─▶ FAILED (bisa retry ke status terakhir)  ─▶ CANCELLED (final)
-Dari gate:
-  [Revisi] ─▶ kembali ke tahap yang dipilih (versi baru)   [Tolak] ─▶ REJECTED (final)
-```
-
-- Transisi didefinisikan di **satu tabel transisi** (`episodes/state.py`). Transisi ilegal = exception, bukan diam-diam.
-- Setiap transisi menulis baris ke `episode_events` (audit).
-- Revisi setelah G1 (misal ganti naskah saat sudah `COST_APPROVED`) **membatalkan** approval yang lebih belakang: approval biaya lama hangus, harus estimasi ulang.
-
-### 6.2 Approval
-
-- Entity `Approval(id, episode_id, gate, subject_hash, status, decided_by, decided_at, expires_at, notes)`.
-- `subject_hash` = hash konten yang disetujui (naskah+storyboard versi X, atau estimasi biaya versi Y). Konten berubah → hash beda → approval tidak berlaku.
-- Tombol Telegram membawa token acak sekali pakai yang dipetakan ke `Approval.id` (tidak membawa data mentah).
-
-### 6.3 Budget & ledger
+Status kerja (job berjalan) ditulis dengan huruf biasa, gate (menunggu manusia) diberi tanda `[Gx]`:
 
 ```
-estimate(storyboard) ──▶ CostEstimate(items[], total_idr, fx_rate, price_table_version)
-        │
-   [G2 approve]  ──▶ CostApproval(max_idr = total × (1 + margin))
-        │
- sebelum tiap panggilan berbayar:
-   BudgetGuard.reserve(episode, provider, est_idr)
-     ✔ kill switch aktif?  ✔ approval G2 valid?  ✔ sisa approval cukup?
-     ✔ sisa batas bulanan cukup?  ✔ sisa batas provider cukup?
-        │ lolos → LedgerEntry(status=RESERVED)
+DRAFT ─start─▶ DISCOVERING ─▶ AWAITING_TOPIC [G0]
+                                   │ approve
+                                   ▼
+RESEARCHING ─▶ FACT_CHECKING ─▶ SCRIPTING ─▶ STORYBOARDING ─▶ AWAITING_EDITORIAL [G1]
+                                                                   │ approve
+                                                                   ▼
+                                    ESTIMATING_COST ─▶ AWAITING_COST [G2]
+                                                           │ approve
+                                                           ▼
+GENERATING_ASSETS ─▶ GENERATING_VOICE ─▶ RENDERING ─▶ AWAITING_FINAL [G3]
+                                                           │ approve
+                                                           ▼
+                                                  EXPORTING ─▶ EXPORTED (final)
+
+Di gate:          revise ─▶ kembali ke status kerja sebelumnya   reject ─▶ REJECTED (final)
+Status kerja:     fail ─▶ FAILED ─retry─▶ status kerja yang gagal tadi
+Non-final:        cancel ─▶ CANCELLED (final)
+```
+
+Target revisi yang sah:
+
+| Gate | Boleh kembali ke |
+|---|---|
+| G0 `AWAITING_TOPIC` | `DISCOVERING` |
+| G1 `AWAITING_EDITORIAL` | `RESEARCHING` … `STORYBOARDING` |
+| G2 `AWAITING_COST` | `RESEARCHING` … `ESTIMATING_COST` |
+| G3 `AWAITING_FINAL` | `RESEARCHING` … `RENDERING` |
+
+Aturan:
+- Semua transisi ada di **satu tabel transisi** (`modules/episodes/state.py`). Transisi ilegal = `IllegalTransition`.
+- Tiap transisi menaikkan `episode.version` (dipakai untuk optimistic locking) dan ditulis ke audit log.
+- Revisi ke tahap X **menggantikan** (supersede) semua approval dari gate yang posisinya setelah X, dan mencabut otorisasi belanja yang lahir dari approval tersebut. Contoh: revisi dari G3 ke `SCRIPTING` menggantikan approval G1 & G2 sekaligus mencabut otorisasi produksi. Approval G0 tetap berlaku.
+
+### 6.2 Artefak berversi
+
+- Tabel `artifacts(episode_id, kind, version, content_json, content_hash)`. Jenis: `topics`, `research`, `factcheck`, `script`, `storyboard`, `cost_estimate`, `render`, `export`.
+- Konten baru selalu jadi **versi baru**. Versi lama tidak pernah ditimpa.
+- `content_hash` = SHA-256 dari JSON kanonik.
+
+### 6.3 Approval (version-aware)
+
+- Tiap gate punya subjek, yaitu daftar artefak yang disetujui: G0 `topics`; G1 `research, factcheck, script, storyboard`; G2 `script, storyboard, cost_estimate`; G3 `script, storyboard, cost_estimate, render`. Subjek juga mencakup batas belanja (G0: batas pra-produksi, G2: batas produksi).
+- `subject_hash` = hash dari `{gate, episode_id, versi + hash tiap artefak, batas belanja}`.
+- Approval menyimpan `episode_version` dan `subject_hash` saat dibuat. Saat diputuskan, keduanya dihitung ulang. Kalau beda, approval jadi `superseded` dan keputusan ditolak (`StaleApproval`).
+- Status: `pending → approved | rejected | revision_requested | superseded | expired`. Hanya boleh ada satu `pending` per episode+gate (unique index parsial).
+- Keputusan pakai `UPDATE … WHERE status='pending'`, sehingga klik ganda hanya diproses sekali.
+- **Token sekali pakai** untuk tombol Telegram: `issue_token()` membuat token acak, yang disimpan hanya hash-nya. Token lama otomatis mati saat token baru dibuat atau approval diputuskan. CLI memakai ID approval dengan actor owner.
+- Approval kedaluwarsa setelah `approval_ttl_hours`. Owner bisa membuat ulang (`reissue`) dengan subjek terbaru.
+
+### 6.4 Anggaran, otorisasi & ledger
+
+Detail keputusan: [ADR-0010](adr/0010-rencana-anggaran-dan-otorisasi.md).
+
+```
+config/budget.yaml ──▶ BudgetPlan (validasi: VPS + alokasi ≤ Rp500.000)
+        │ owner: `studio budget activate`
         ▼
-   panggil provider ──▶ sukses → COMMITTED (biaya aktual)
-                    └─▶ gagal  → RELEASED
+budget_periods (snapshot alokasi + kurs)  ──▶ otorisasi `operational`
+G0 approve ──▶ otorisasi `preproduction` (per episode)
+G2 approve ──▶ otorisasi `production`    (per episode, = batas di kartu G2)
+
+BudgetGuard.reserve(SpendRequest)
+  ✔ idempotency key sudah ada? → kembalikan entri lama
+  ✔ mode real: kill switch aktif + syarat aktivasi berbayar terpenuhi
+  ✔ rencana valid  ✔ periode aktif  ✔ otorisasi aktif & cukup
+  ✔ sisa alokasi kategori cukup  ✔ sisa total yang bisa dibelanjakan cukup
+      │ lolos → LedgerEntry RESERVED (simpan kurs & versi harga)
+      ▼
+panggilan provider ─▶ sukses: COMMITTED (biaya aktual; tandai overrun bila > reservasi)
+                   └▶ gagal: RELEASED   · hasil tak jelas: commit sebesar reservasi
 ```
 
-- Uang disimpan sebagai **integer**: rupiah (`amount_idr`) dan mikro-USD (`amount_usd_micros`). Tidak ada `float` untuk uang.
-- Kurs & tabel harga punya versi; estimasi menyimpan versi yang dipakai.
-- Biaya aktual > approval → job berhenti, episode kembali ke `AWAITING_COST` dengan estimasi baru.
-- Biaya LLM milik Hermes tidak lewat guard studio → dikontrol lewat batas di dashboard OpenAI (project budget) + model murah. Lihat RISKS H-04.
+- Rupiah = `int`, USD = `int` mikro-dolar, kurs = `Decimal`; USD→IDR dibulatkan ke atas.
+- Mode `simulated` (mock) dan `real` dihitung terpisah dengan aturan yang sama.
+- Ledger mencatat `source` (`studio`/`hermes`) dan `purpose` (`conversation`, `tool_call`, `retry`, `internal`, `research`, …).
+- Approve G2 ditolak kalau batas produksi melebihi sisa alokasi kategori yang relevan.
 
-### 6.4 Tabel utama (draft)
+### 6.5 Tabel (Fase 1)
 
 | Tabel | Pemilik | Isi |
 |---|---|---|
-| `episodes` | episodes | id, judul, kategori, durasi target, status, versi aktif |
-| `episode_events` | episodes | audit transisi |
-| `topic_candidates` | discovery | kandidat + label risiko |
-| `sources` | research | URL, judul, penerbit, diakses_pada, kepercayaan |
-| `claims`, `claim_evidence` | factcheck | klaim, status, relasi ke sumber |
-| `scripts` | scripting | versi naskah, jumlah kata, estimasi durasi |
-| `storyboards`, `shots` | storyboard | versi, shot, prompt, jenis visual |
-| `approvals` | approvals | gate, subject_hash, keputusan |
-| `cost_estimates`, `ledger_entries`, `budget_periods` | budget | estimasi, ledger, batas bulanan |
-| `assets` | assets | path lokal, checksum, provider, request_id |
-| `provider_calls` | providers (infra) | log panggilan: idempotency key, status, durasi, biaya |
-| `jobs` | infra/jobs | antrean: tipe, payload, status, attempts, lease |
+| `schema_migrations` | infra/db | versi migrasi + checksum |
+| `audit_log` | audit | append-only (trigger menolak UPDATE/DELETE) |
+| `episodes` | episodes | id, kategori, durasi target, status, `failed_from`, `version` |
+| `artifacts` | artifacts | konten berversi + hash |
+| `approvals` | approvals | gate, subjek, hash, status, token hash, keputusan |
+| `budget_periods` | budget | snapshot rencana per bulan |
+| `spend_authorizations` | budget | jenis, batas, status, approval asal |
+| `ledger_entries` | budget | reservasi/realisasi, kurs, mode, sumber, tujuan |
+| `jobs` | infra/jobs | antrean dengan lease |
+
+Tabel Fase berikut (`sources`, `claims`, `shots`, `assets`, `provider_calls`, …) ditambah lewat migrasi baru oleh modul pemiliknya.
 
 ## 7. Pipeline & Job
 
-- Antrean job di SQLite: `jobs(id, type, episode_id, payload, status, attempts, run_after, lease_until, idempotency_key UNIQUE)`.
-- Worker async mengambil job dengan lease (supaya job yang ditinggal crash bisa diambil ulang).
-- `workflow` mendengarkan event domain (`ScriptCreated`, `ApprovalGranted`, …) dan meng-enqueue job berikutnya. Gate = tidak ada job otomatis; menunggu manusia.
-- Panggilan provider memakai `idempotency_key = hash(episode, shot, versi, prompt)`. Hasil sukses di `provider_calls` dipakai ulang, tidak dipanggil lagi.
-- Job async provider (Higgsfield: `queued` → polling) disimpan `request_id`-nya, sehingga setelah restart worker melanjutkan polling, **bukan** submit ulang.
+- `jobs(id, type, episode_id, payload, status, attempts, max_attempts, run_after, lease_owner, lease_until, idempotency_key UNIQUE, last_error)`.
+- Worker mengambil job dengan **lease**. Job `running` yang lease-nya habis (worker crash) diambil ulang.
+- Handler + pencatatan sukses berjalan dalam **satu transaksi**. Crash di tengah = rollback, aman diulang. Sebelum commit, worker memastikan lease masih miliknya.
+- Payload job stage membawa `expected_status` + `expected_version`. Kalau episode sudah berubah (revisi/batal), job ditandai `obsolete` tanpa efek.
+- Error biasa → retry dengan backoff eksponensial sampai `max_attempts`, lalu episode `FAILED`. Error non-retryable (misalnya budget habis) → langsung `FAILED`.
+- Fase 1 memakai **handler placeholder** yang membuat artefak contoh dan mencatat biaya simulasi. Handler asli menggantikannya di Fase 2 & 4.
+- Untuk provider asli yang async (Higgsfield, Fase 6), panggilan eksternal tidak bisa ikut transaksi. Karena itu `request_id` disimpan di transaksi terpisah sebelum polling.
 
 ## 8. Hybrid Model Routing (LLM)
 
-Tugas dipetakan ke **tier**, tier dipetakan ke model di config (nama model tidak di-hardcode).
-
 | Tier | Contoh tugas | Karakter |
 |---|---|---|
-| `fast` | brainstorming topik, ringkas sumber, ekstrak klaim, format storyboard ke JSON | murah, cepat |
-| `smart` | menulis naskah, menilai bukti cek fakta, QA akhir naskah | lebih mahal, dipakai hemat |
+| `fast` | brainstorming topik, ringkas sumber, ekstrak klaim, format JSON, **Hermes** (default) | murah |
+| `smart` | menulis naskah, menilai bukti cek fakta, QA akhir | lebih mahal |
 
-Aturan router:
-1. Output wajib JSON yang divalidasi Pydantic; gagal validasi → retry 1× dengan pesan error, lalu gagal.
-2. Cache respons berdasarkan hash (prompt + model + input) supaya revisi kecil tidak membayar ulang.
-3. Budget mendekati batas → tugas `smart` yang boleh diturunkan (ditandai di config) pakai `fast`, dan owner diberi tahu.
-4. Tiap panggilan tercatat token in/out + biaya.
-5. Nama model & harga per token ada di `config/pricing.yaml` dengan `verified_at`; diverifikasi saat Fase 6.
+- Nama model asli dan harga per 1 juta token ada di `config/pricing.yaml`. Fase 1 memakai nilai **placeholder** yang ditandai belum terverifikasi.
+- Semua panggilan, baik dari Studio maupun Hermes, lewat `BudgetGuard` (ADR-0009).
+- Output wajib JSON tervalidasi Pydantic, ada cache per hash input, dan bisa turun ke tier `fast` saat budget menipis (Fase 2).
 
-## 9. Asset, Voice & Render
+## 9. Asset, Voice & Render (Fase 4)
 
 ### 9.1 Strategi visual hemat
 
 | Jenis shot | Sumber | Biaya relatif |
 |---|---|---|
-| `text_card` / `map` | dibuat lokal (FFmpeg/Pillow) | gratis |
-| `archival` | arsip berlisensi bebas (misal Wikimedia Commons) | gratis, wajib atribusi |
+| `text_card` / `map` | dibuat lokal | gratis |
+| `archival` | arsip berlisensi bebas | gratis, wajib atribusi |
 | `ai_image` + Ken Burns | provider gambar | murah |
-| `ai_video` (hero) | provider video | mahal — dibatasi N per episode (default 3) |
+| `ai_video` (hero) | provider video | mahal — maks. 3 per episode (default) |
 
 ### 9.2 Pipeline render FFmpeg
 
 ```
-per shot: normalisasi (scale/crop 1080×1920, 30 fps, durasi pas)
-          └─ ai_image → zoompan (Ken Burns)
-gabung:   xfade antar shot
-audio:    voice + musik (sidechaincompress = ducking) → loudnorm −14 LUFS
-teks:     subtitle .ass (burn-in) dari timing TTS + label AI
-output:   master (H.264 CRF ~20, AAC 192k) + preview (540p, target ≤ 50 MB)
+per shot: normalisasi (1080×1920, 30 fps) · ai_image → zoompan (Ken Burns)
+gabung:   xfade · audio: voice + musik (ducking) → loudnorm −14 LUFS
+teks:     subtitle .ass + label AI · output: master + preview (≤ 50 MB)
 ```
 
-- `render/` menghasilkan **timeline** (data murni), lalu `infra/ffmpeg` mengubahnya jadi perintah. Timeline mudah dites tanpa menjalankan FFmpeg.
-- Test render memakai klip kecil (resolusi & durasi kecil) supaya CI cepat.
+**Performa:** target 180 detik selesai ≤ 10 menit di 2 vCPU adalah **benchmark awal, bukan jaminan**. Fase 4 menyediakan skrip benchmark; hasilnya dicatat di `docs/benchmarks/`. Kalau meleset, yang disetel adalah preset encoder, resolusi preview, dan jumlah filter.
 
 ### 9.3 Mock provider
 
 | Mock | Perilaku |
 |---|---|
-| `MockLLM` | Respons deterministik dari fixture/template sesuai tugas; bisa disetel untuk gagal/JSON rusak |
-| `MockImage` | Gambar warna solid + teks prompt (Pillow/FFmpeg) |
-| `MockVideo` | Klip `testsrc`/warna + teks, meniru status `queued → in_progress → completed` |
-| `MockTTS` | Audio tone/hening dengan durasi = jumlah kata ÷ 2,5 + timing per kalimat |
-| `MockSources` | Dossier fixture per topik contoh |
-| `MockDirector` | Menjalankan alur standar tanpa Hermes |
+| `MockLLM` | respons deterministik dari fixture; bisa disetel gagal/JSON rusak |
+| `MockImage` / `MockVideo` | gambar/klip warna + teks; video meniru `queued → in_progress → completed` |
+| `MockTTS` | audio dengan durasi = kata ÷ 2,5 + timing per kalimat |
+| `MockSources` | dossier fixture |
+| `MockDirector` | alur standar tanpa Hermes |
 
-Semua mock melaporkan **biaya simulasi** dari `pricing.yaml`, jadi guard budget benar-benar teruji.
+Semua mock mencatat **biaya simulasi** lewat `BudgetGuard` (mode `simulated`).
 
 ## 10. Penyimpanan File
 
 ```
-data/
+data/                       (tidak masuk git)
 ├── studio.db
-└── episodes/<episode_id>/
-    ├── research/      dossier.json, sources.json
-    ├── factcheck/     claims.json
-    ├── script/        v1.json, v2.json
-    ├── storyboard/    v1.json
-    ├── assets/        shot_001.png, shot_003.mp4, …
-    ├── audio/         voice.wav, timing.json
-    ├── render/        master.mp4, preview.mp4, subtitles.ass
-    └── export/        (paket ekspor final)
+└── episodes/<episode_id>/{research,factcheck,script,storyboard,assets,audio,render,export}/
 ```
-
-`data/` tidak masuk git. Path di DB disimpan relatif terhadap `data/`.
 
 ## 11. Konfigurasi & Secret
 
-- `pydantic-settings` membaca `.env` + `config/studio.yaml`.
-- Default aman: `PAID_PROVIDERS_ENABLED=false`, semua provider = `mock`.
-- Mengganti provider ke versi asli butuh **dua** hal: flag global aktif **dan** flag provider aktif. Kalau salah satu mati → pakai mock (atau gagal keras, sesuai mode).
-- Secret: `TELEGRAM_STUDIO_BOT_TOKEN`, `OPENAI_API_KEY`, `HIGGSFIELD_API_KEY_ID`, `HIGGSFIELD_API_KEY_SECRET`, `TELEGRAM_ALLOWED_USER_IDS`. Tidak pernah di-log (redaksi di `structlog` processor).
+- Env (`.env`, prefix `STUDIO_`): `STUDIO_DATA_DIR`, `STUDIO_CONFIG_DIR`, `STUDIO_OWNER_IDS`, `STUDIO_LOG_LEVEL`, `PAID_PROVIDERS_ENABLED` (default `false`).
+- File: `config/budget.yaml` (rencana anggaran) dan `config/pricing.yaml` (harga).
+- Kalau `PAID_PROVIDERS_ENABLED=true` dan syarat aktivasi berbayar belum terpenuhi, aplikasi **menolak start**. Di Fase 1 belum ada provider asli, jadi nilai `true` selalu ditolak.
+- Secret masa depan: `TELEGRAM_BOT_TOKEN`, `OPENAI_API_KEY` (hanya dipegang gateway), `HIGGSFIELD_API_KEY_ID/SECRET`. Secret tidak pernah di-log (ada processor redaksi di `structlog`).
 
 ## 12. Keamanan
 
-- Allowlist user Telegram di Studio Bot **dan** di Hermes (`TELEGRAM_ALLOWED_USERS`).
-- Konten riset dari web dibungkus sebagai data (delimiter jelas) dan tidak pernah dieksekusi sebagai instruksi.
-- Hermes: matikan toolset terminal/file/eksekusi kode untuk profil Director; allowlist tool MCP.
-- MCP server studio hanya membuka tool di §5.4.
-- Panggilan keluar hanya ke host yang dikenal (allowlist host di HTTP client).
+- `STUDIO_OWNER_IDS` (format `cli:<nama>`, `telegram:<id>`) = satu-satunya yang boleh memutuskan gate & mengaktifkan anggaran. Default kosong = tidak ada yang bisa approve.
+- Konten riset dari web = data tak tepercaya (dibungkus delimiter, tidak dieksekusi).
+- Hermes: tanpa token bot, tanpa API key, toolset berbahaya dimatikan, allowlist tool MCP.
+- Audit log append-only di level database (trigger).
 
-## 13. Keputusan Arsitektur (ringkas — akan dipecah jadi ADR)
+## 13. Keputusan Arsitektur
 
-| # | Keputusan | Alasan |
+| # | Keputusan | Status |
 |---|---|---|
-| ADR-0001 | Modular monolith, bukan microservice | 1 owner, 1 VPS kecil, biaya rendah |
-| ADR-0002 | SQLite + stdlib `sqlite3` + migrasi SQL | Nol biaya, simpel, cukup untuk beban 1 owner |
-| ADR-0003 | Approval di luar jalur LLM | Prinsip "manusia pegang kunci" |
-| ADR-0004 | Hermes ↔ Studio lewat MCP stdio | Batas jelas, Hermes bisa diganti tanpa ubah domain |
-| ADR-0005 | Dua bot Telegram (menunggu spike) | Hindari konflik polling & pisahkan approval |
-| ADR-0006 | Mock provider sebagai default | Aturan "tanpa API berbayar" di tahap awal |
-| ADR-0007 | Uang sebagai integer + ledger reservasi | Mencegah kebocoran & error pembulatan |
-| ADR-0008 | Antrean job di SQLite, bukan Redis/Celery | Tanpa infrastruktur tambahan |
+| ADR-0001 | Modular monolith | Diterima |
+| ADR-0002 | SQLite + stdlib `sqlite3` + migrasi SQL (dibundel di package) | Diterima |
+| ADR-0003 | Approval di luar jalur LLM | Diterima |
+| ADR-0004 | Hermes ↔ Studio lewat MCP stdio | Diterima |
+| [ADR-0005](adr/0005-satu-bot-telegram.md) | Satu bot Telegram milik Studio | **Diterima** (menggantikan "dua bot") |
+| ADR-0006 | Mock provider sebagai default | Diterima |
+| ADR-0007 | Uang sebagai integer + ledger reservasi | Diterima (detail di ADR-0010) |
+| ADR-0008 | Antrean job di SQLite | Diterima |
+| [ADR-0009](adr/0009-metering-token-llm.md) | Semua token LLM lewat gateway metering | **Diterima** |
+| [ADR-0010](adr/0010-rencana-anggaran-dan-otorisasi.md) | Rencana anggaran, kurs, otorisasi belanja | **Diterima** |
