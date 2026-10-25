@@ -80,7 +80,7 @@ MVP = Fase 0–5 selesai: satu episode bisa dibuat lengkap lewat Telegram dengan
 *Anggaran*
 - [x] AC1.9 `config/budget.yaml` bawaan valid: kurs 17.850, VPS = Rp169.575, total = Rp500.000. Kurs bisa diubah lewat config, dan rencana yang melewati batas membuat semua reservasi ditolak.
 - [x] AC1.10 VPS aktual ≠ rencana → rencana "perlu dihitung ulang" dan aktivasi berbayar ditolak. Usulan realokasi memakai cadangan dulu dan totalnya tidak melewati batas.
-- [x] AC1.11 `BudgetGuard.reserve` menolak (masing-masing dites): mode real saat kill switch mati, rencana tidak valid, periode tidak aktif, otorisasi tidak aktif/kurang, alokasi kategori kurang, total kurang. Setiap penolakan tercatat di audit.
+- [x] AC1.11 `BudgetGuard.reserve` menolak (masing-masing dites): mode real saat kill switch mati, mode real saat syarat aktivasi berbayar belum terpenuhi, rencana tidak valid, periode tidak aktif, otorisasi dicabut/milik periode atau episode lain/kurang, alokasi kategori kurang. Setiap penolakan tercatat di audit. (Cek total bulanan juga ada sebagai lapisan cadangan.)
 - [x] AC1.12 Property test (hypothesis): pemakaian (committed + reserved) tidak pernah melewati alokasi kategori maupun batas otorisasi.
 - [x] AC1.13 Setiap estimasi & entri ledger menyimpan kurs dan versi harga; uang selalu integer (test AST: tidak ada `float` di modul budget).
 - [x] AC1.14 Pemakaian Hermes (percakapan, tool call, retry) tercatat dengan `source=hermes`, memotong alokasi `openai` yang sama dengan Studio, dan ditolak saat habis.

@@ -1,0 +1,38 @@
+# Rencana anggaran bulanan 03:AM (ADR-0010).
+#
+# - Semua nilai Rupiah = integer.
+# - Nilai USD & kurs WAJIB ditulis sebagai string (contoh "9.50") supaya tidak jadi float.
+# - Perubahan file ini baru berlaku untuk periode berjalan setelah owner menjalankan
+#   `studio budget activate` lagi.
+
+monthly_budget_idr: 500000
+timezone: Asia/Jakarta
+
+fx:
+  usd_idr: "17850"
+  as_of: 2026-10-25
+  source: "asumsi perencanaan owner"
+
+vps:
+  # Biaya referensi yang dipakai untuk menghitung alokasi.
+  planned_usd: "9.50"
+  # Isi setelah VPS benar-benar dibeli. Kalau berbeda dari planned_usd, jalankan
+  # `studio budget recalc --vps-usd <aktual>` dan setujui alokasi baru sebelum
+  # API berbayar bisa diaktifkan.
+  actual_usd: null
+
+# Alokasi per kategori. Hanya higgsfield, openai, dan tts yang bisa dibelanjakan.
+# Cadangan (reserve) tidak bisa dibelanjakan langsung.
+allocations_idr:
+  higgsfield: 190000
+  openai: 60000 # termasuk SELURUH token Hermes (percakapan, tool call, retry)
+  tts: 25000
+  reserve: 55425
+
+limits:
+  # Otorisasi bulanan untuk percakapan Hermes + discovery topik (bagian dari alokasi openai).
+  operational_cap_idr: 20000
+  # Batas biaya LLM per episode dari riset sampai storyboard (disetujui di G0).
+  preproduction_cap_idr: 5000
+  # Margin di atas estimasi untuk batas produksi yang disetujui di G2.
+  production_margin_pct: 20

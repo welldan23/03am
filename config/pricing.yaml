@@ -1,0 +1,45 @@
+# Tabel harga provider (USD).
+#
+# PERINGATAN: semua angka di bawah adalah PLACEHOLDER untuk biaya simulasi mock.
+# Belum diverifikasi ke halaman harga resmi. Verifikasi wajib di Fase 6 sebelum
+# provider berbayar diaktifkan.
+
+version: "placeholder-2026-10-25"
+verified_at: null
+
+prices:
+  openai.fast.input:
+    category: openai
+    unit: token
+    per_units: 1000000
+    usd: "0.40"
+  openai.fast.output:
+    category: openai
+    unit: token
+    per_units: 1000000
+    usd: "1.60"
+  openai.smart.input:
+    category: openai
+    unit: token
+    per_units: 1000000
+    usd: "2.00"
+  openai.smart.output:
+    category: openai
+    unit: token
+    per_units: 1000000
+    usd: "8.00"
+  higgsfield.image:
+    category: higgsfield
+    unit: image
+    per_units: 1
+    usd: "0.02"
+  higgsfield.video_second:
+    category: higgsfield
+    unit: second
+    per_units: 1
+    usd: "0.07"
+  tts.characters:
+    category: tts
+    unit: character
+    per_units: 1000000
+    usd: "15.00"

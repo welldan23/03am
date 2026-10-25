@@ -2,7 +2,19 @@
 
 Studio produksi dokumenter AI semi-otonom berbasis Telegram. Membuat dokumenter pendek cinematic berbahasa Indonesia (30–180 detik) tentang sejarah, geopolitik, sains, geografi, dan misteri — dengan persetujuan manusia di setiap pengeluaran dan hasil akhir.
 
-> Status: **tahap perencanaan**. Belum ada kode. Lihat dokumen di bawah.
+> Status: **Fase 1 selesai (fondasi backend)** — menunggu review. Tahap produksi masih placeholder; belum ada AI, Telegram, atau provider berbayar.
+
+## Mulai cepat
+
+Butuh Python 3.12+ dan [uv](https://docs.astral.sh/uv/).
+
+```bash
+uv sync
+cp .env.example .env
+uv run pytest                 # semua test (offline)
+uv run studio budget plan     # lihat rencana anggaran
+uv run studio --help
+```
 
 | Dokumen | Isi |
 |---|---|
@@ -10,4 +22,5 @@ Studio produksi dokumenter AI semi-otonom berbasis Telegram. Membuat dokumenter 
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arsitektur modular monolith, struktur repo, domain |
 | [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) | Fase pengembangan + acceptance criteria |
 | [docs/RISKS.md](docs/RISKS.md) | Risiko integrasi Hermes Agent & Higgsfield |
+| [docs/adr/](docs/adr/README.md) | Keputusan arsitektur (ADR) |
 | [CLAUDE.md](CLAUDE.md) | Panduan engineering |
