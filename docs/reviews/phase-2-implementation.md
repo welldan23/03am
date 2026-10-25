@@ -183,7 +183,16 @@ Kelima kombinasi topik × format (Krakatau quick/archives/deep, Voynich archives
 
 ## 4. Hasil GitHub Actions
 
-_Diisi setelah push (lihat bagian 8)._
+Run [#5 (id 40216692773)](https://github.com/welldan23/03am/actions/runs/40216692773), event `push`, commit `71797fa`. Dicek lewat GitHub API (daftar job + log), bukan asumsi.
+
+| Job | Lint | Format | Typecheck | Batas modul | Test (offline) | Kesimpulan |
+|---|---|---|---|---|---|---|
+| `check (3.12)` | ✅ | ✅ | ✅ | ✅ | ✅ `287 passed in 22.82s` | **success** |
+| `check (3.13)` | ✅ | ✅ | ✅ | ✅ | ✅ `287 passed in 18.20s` | **success** |
+
+Satu-satunya warning: *"Node.js 20 is deprecated"* untuk `actions/checkout@v4` dan `astral-sh/setup-uv@v6` (TD-13). Warning ini tidak menggagalkan build.
+
+Commit laporan ini (yang hanya mengubah dokumen) memicu run CI baru; hasilnya dilaporkan di ringkasan akhir ke owner.
 
 ---
 
@@ -386,4 +395,9 @@ Lihat [DEVELOPMENT_PLAN §Fase 2](../DEVELOPMENT_PLAN.md) — setiap AC diberi n
 
 ## 8. Commit
 
-_Diisi setelah push._
+| Commit | Isi |
+|---|---|
+| `71797fa` | Seluruh kode, test, fixture, dan dokumen Fase 2 (CI hijau, lihat §4) |
+| commit berikutnya | Laporan ini dilengkapi hasil CI (dokumen saja) |
+
+Branch: `claude/phase-2-research`. Belum ada PR dan belum di-merge; menunggu persetujuan owner.
