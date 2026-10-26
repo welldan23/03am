@@ -162,7 +162,14 @@ Tetap utuh dan tetap dites: owner allowlist (dicek sebelum update disimpan, dan 
 
 ## 5. Hasil GitHub Actions
 
-_Diisi setelah push (lihat §7)._
+Run [#9 (id 40268224375)](https://github.com/welldan23/03am/actions/runs/40268224375), event `push`, commit `ad59990`. Dicek lewat GitHub API (daftar job + log).
+
+| Job | Install (`uv sync --locked`) | Lint | Format | Typecheck | Batas modul | Test (offline) | Kesimpulan |
+|---|---|---|---|---|---|---|---|
+| `check (3.12)` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ `407 passed in 34.36s` | **success** |
+| `check (3.13)` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ `407 passed in 29.50s` | **success** |
+
+Satu-satunya warning: *"Node.js 20 is deprecated"* (TD-13), tidak menggagalkan build. Commit laporan ini (dokumen saja) memicu run CI baru; hasilnya dilaporkan di ringkasan akhir ke owner.
 
 ---
 
@@ -183,4 +190,9 @@ _Diisi setelah push (lihat §7)._
 
 ## 7. Commit
 
-_Diisi setelah push._
+| Commit | Isi |
+|---|---|
+| `ad59990` | Seluruh kode, test, dan dokumen hotfix (CI hijau, lihat §5) |
+| commit berikutnya | Laporan ini dilengkapi hasil CI (dokumen saja) |
+
+Branch: `claude/phase-3-reliability`. Belum ada PR dan belum di-merge; menunggu persetujuan owner.
