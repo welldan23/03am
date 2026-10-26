@@ -28,9 +28,11 @@ from studio.bootstrap import App, build_app
 from studio.interfaces.telegram.bot import CoreRunner, StudioBot
 from studio.interfaces.telegram.engine import ConversationEngine
 from studio.interfaces.telegram.notifier import NotificationDispatcher
+from studio.interfaces.telegram.processor import UpdateProcessor
 from studio.interfaces.telegram.transport import AiogramTransport
 from studio.shared.config import Settings
 from studio.shared.errors import ConfigError
+from studio.shared.ids import new_id
 from studio.shared.logging import configure_logging, get_logger
 
 _log = get_logger("studio.telegram.runner")
@@ -156,13 +158,24 @@ async def run_polling(settings: Settings) -> None:
         core=core,
         clock=app.clock,
         actions=app.actions,
-        updates=app.updates,
+        inbox=app.inbox,
+        idle_seconds=settings.notify_idle_seconds,
+    )
+    processor = UpdateProcessor(
+        db=app.db,
+        clock=app.clock,
+        controller=app.controller,
+        engine=engine,
+        inbox=app.inbox,
+        replies=app.replies,
+        transport=transport,
+        core=core,
+        owner=f"bot-{new_id(app.clock)}",
         idle_seconds=settings.notify_idle_seconds,
     )
     studio_bot = StudioBot(
         controller=app.controller,
-        engine=engine,
-        updates=app.updates,
+        processor=processor,
         audit=app.audit,
         transport=transport,
         core=core,
@@ -173,6 +186,9 @@ async def run_polling(settings: Settings) -> None:
 
     stop = asyncio.Event()
     notifier_task = asyncio.create_task(notifier.run(stop), name="studio-notifier")
+    # Pemulihan update yang tertinggal (crash/restart) jalan SEBELUM update baru dipoll.
+    await processor.recover()
+    recovery_task = asyncio.create_task(processor.run(stop), name="studio-update-recovery")
     worker = (
         WorkerThread(settings, on_job=notifier.wake_threadsafe)
         if settings.telegram_run_worker
@@ -192,6 +208,8 @@ async def run_polling(settings: Settings) -> None:
         stop.set()
         with contextlib.suppress(Exception):
             await asyncio.wait_for(notifier_task, timeout=10)
+        with contextlib.suppress(Exception):
+            await asyncio.wait_for(recovery_task, timeout=10)
         if worker is not None:
             await asyncio.to_thread(worker.stop)
         await core.run(app.close)

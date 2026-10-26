@@ -307,7 +307,7 @@ Dihasilkan dari bot asli (engine + controller + SQLite + mock provider) dengan f
 | TD-24 | Sedang | G1 belum menampilkan jumlah shot dan belum melampirkan dokumen; G2/G3 masih placeholder berlabel simulasi (AC3.3b, AC2.6). | Fase 4 |
 | TD-25 | Sedang | Mock LLM mengabaikan isi catatan revisi (TD-18): naskah revisi = naskah fixture yang sama, hanya `notes` yang berubah. | Fase 6 (LLM asli) |
 | TD-26 | Rendah | Notifikasi *at-least-once*: bisa dobel kalau proses mati tepat setelah kirim sebelum dicatat. | Diterima |
-| TD-27 | Rendah | Dedupe update *at-most-once*: kalau proses mati setelah update dicatat tapi sebelum diproses, update itu hilang (owner mengirim ulang). Aksi sensitif tetap aman karena kode sekali pakai. | Diterima |
+| TD-27 | ~~Rendah~~ | ~~Dedupe update *at-most-once*~~ — **diperbaiki** di hotfix reliability ([audit](phase-3-reliability-audit.md), ADR-0013): update kini disimpan dan diproses ulang setelah crash. | Selesai |
 | TD-28 | Rendah | Override editorial gate belum tersedia di Telegram (masih CLI) karena butuh alasan tertulis & pertimbangan; sengaja ditunda. | Keputusan owner |
 | TD-29 | Rendah | Satu thread inti untuk semua akses DB bot: cukup untuk 1–2 owner, bukan untuk banyak pengguna. | Diterima |
 | TD-30 | Rendah | Kunci poller tunggal pakai `fcntl` (Linux/macOS). Mode webhook belum dibuat. | Fase 7 (VPS) |

@@ -159,17 +159,21 @@ Keputusan: **satu bot Telegram milik Studio** ([ADR-0005](adr/0005-satu-bot-tele
 
 ```
 Telegram ─▶ aiogram (long polling) ─▶ adapter (Update → Inbound)
-        ─▶ StudioBot: chat pribadi? → owner allowlist (from_user.id)? → dedupe update_id
-        ─▶ CoreRunner (1 thread untuk semua akses DB bot)
-        ─▶ ConversationEngine (sinkron; state di ui_conversations)
-              ├─ teks  ─▶ IntentParser (aturan) ─▶ StudioController
-              └─ tombol ─▶ callbacks (≤ 64 byte) ─▶ StudioController.press(kode sekali pakai)
-        ─▶ Reply (send/edit/answer) ─▶ Transport (aiogram, retry/rate limit) ─▶ Telegram
+        ─▶ StudioBot: chat pribadi? → owner allowlist (from_user.id)?
+        ─▶ UpdateProcessor (ADR-0013), semua akses DB lewat CoreRunner (1 thread):
+              1. receive: simpan update di ui_inbox + klaim (lease, fencing token)
+              2. SATU transaksi: cek token → ConversationEngine (state di ui_conversations)
+                    ├─ teks  ─▶ IntentParser (aturan) ─▶ StudioController
+                    └─ tombol ─▶ callbacks (≤ 64 byte) ─▶ StudioController.press(kode sekali pakai)
+                 → status committed + balasan ke ui_reply_outbox
+              3. flush: tiap baris balasan ─▶ Transport (aiogram, retry/rate limit) ─▶ Telegram
+              4. recover (start + berkala): update tertinggal & balasan tertunda
 worker (thread/proses lain, koneksi DB sendiri) ─▶ trigger DB ─▶ notification_outbox
         ─▶ NotificationDispatcher (di luar transaksi, delivered_to per penerima) ─▶ Telegram
 ```
 
 - **Keamanan:** hanya chat pribadi; identitas dari user ID numerik di `STUDIO_OWNER_IDS` (`telegram:<id>`); non-owner tidak mendapat data apa pun dan dicatat (`telegram.unauthorized`, dibatasi); controller memeriksa owner lagi di setiap metode; kode tombol sekali pakai, terikat actor, kedaluwarsa, hangus per kartu; keputusan approval tidak pernah dari teks bebas; token bot `SecretStr` + filter sensor log.
+- **Tahan crash ([ADR-0013](adr/0013-pemrosesan-update-tahan-crash.md)):** update tidak dianggap selesai sebelum aksi bisnisnya di-commit; crash sebelum commit → diproses ulang; crash setelah commit → hanya balasan yang dikirim ulang. Efek bisnis exactly-once, pengiriman Telegram at-least-once (`sendMessage` bisa dobel setelah crash di jendela sempit).
 - **Reliability:** `retry_after` dihormati (singkat ditunggu, panjang dijadwalkan ulang di outbox); timeout/jaringan → backoff; diblokir user → gagal permanen; "message is not modified" diabaikan; pesan > 4096 karakter dipecah per baris (tombol di potongan terakhir); SQLite busy → coba ulang 3×, lalu pesan ramah; error tak terduga → pesan umum tanpa traceback; satu poller per folder data (kunci file); shutdown rapi lewat sinyal.
 - Hermes memanggil Studio lewat **MCP stdio** dengan allowlist tool.
 - Hermes tidak memegang API key OpenAI. LLM Hermes lewat **gateway metering** Studio ([ADR-0009](adr/0009-metering-token-llm.md)).
@@ -297,7 +301,8 @@ panggilan provider ─▶ sukses: COMMITTED (biaya aktual; tandai overrun bila >
 | `ledger_entries` | budget | reservasi/realisasi, kurs, mode, sumber, tujuan |
 | `jobs` | infra/jobs | antrean dengan lease + fencing token (`lease_token`) |
 | `provider_calls` | calls | satu baris per panggilan provider: key idempotensi, status, attempt, estimasi token/biaya, otorisasi, ledger, respons, biaya aktual (Fase 2, migrasi `0004`) |
-| `ui_processed_updates` | controller | update chat yang sudah diproses (dedupe; Fase 3, migrasi `0005`) |
+| `ui_inbox` | controller | update chat yang diterima + lifecycle `received → processing → committed → delivered/failed`, lease & fencing token (migrasi `0006`, menggantikan `ui_processed_updates`) |
+| `ui_reply_outbox` | controller | balasan per update, satu baris = satu panggilan Bot API, status `pending/sent/dead` |
 | `ui_action_codes` | controller | hash kode tombol sekali pakai: actor, aksi, payload (ID saja), kedaluwarsa, dipakai |
 | `ui_conversations` | controller | state percakapan per chat (alur buat dokumenter, catatan revisi, episode aktif) |
 | `notification_outbox` | notifications | notifikasi persisten; diisi trigger dari `audit_log` & `jobs` di transaksi kejadiannya |
@@ -438,3 +443,4 @@ data/                       (tidak masuk git)
 | [ADR-0010](adr/0010-rencana-anggaran-dan-otorisasi.md) | Rencana anggaran, kurs, otorisasi belanja | **Diterima** |
 | [ADR-0011](adr/0011-eksekusi-job-dua-fase.md) | Eksekusi job dua fase + `provider_calls` | **Diterima** |
 | [ADR-0012](adr/0012-antarmuka-telegram-dan-outbox.md) | Studio Controller, kode tombol sekali pakai, outbox notifikasi | **Diterima** |
+| [ADR-0013](adr/0013-pemrosesan-update-tahan-crash.md) | Pemrosesan update Telegram tahan crash (inbox + reply outbox) | **Diterima** |

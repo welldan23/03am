@@ -42,7 +42,7 @@ Fase 3 menambah bot Telegram sebagai antarmuka utama. Risikonya:
 
 ### 4. Conversation layer terpisah dari business logic
 
-- `ConversationEngine` (sinkron, tanpa aiogram) memetakan pesan/tombol → controller → layar. State percakapan ada di SQLite (`ui_conversations`), update yang sudah diproses di `ui_processed_updates`.
+- `ConversationEngine` (sinkron, tanpa aiogram) memetakan pesan/tombol → controller → layar. State percakapan ada di SQLite (`ui_conversations`). *(Diperbarui oleh [ADR-0013](0013-pemrosesan-update-tahan-crash.md): dedupe `ui_processed_updates` yang dicatat sebelum pemrosesan diganti inbox + reply outbox persisten.)*
 - Pemahaman teks lewat port `IntentParser`. Fase 3 memakai `RuleBasedIntentParser` (deterministik). Parser **tidak pernah** menerima callback dan tidak bisa menghasilkan keputusan approval; "setujui saja" dijawab dengan daftar kartu. Hermes (Fase 5) dapat mengganti/melengkapi parser tanpa mengubah engine maupun controller.
 - Proses bot memakai satu thread inti untuk semua akses database (koneksi SQLite tidak thread-safe). Worker job berjalan di thread/proses lain dengan koneksinya sendiri.
 

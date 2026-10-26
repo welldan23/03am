@@ -3,6 +3,7 @@ error internal tanpa traceback, SQLite busy, konversi update aiogram, worker ber
 
 import asyncio
 import sqlite3
+from datetime import timedelta
 from typing import Any
 
 import pytest
@@ -121,21 +122,35 @@ def test_long_screens_are_split_and_keyboard_goes_last() -> None:
     )
 
 
+def _exhaust_retries(harness: Harness, clock: Any) -> None:
+    """Majukan waktu & jalankan pemulihan sampai jatah percobaan update habis."""
+    for _ in range(harness.app.inbox.max_attempts + 1):
+        clock.advance(timedelta(minutes=2))
+        harness.recover()
+
+
 def test_internal_errors_never_leak_details(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
+    harness: Harness, monkeypatch: pytest.MonkeyPatch, clock: Any
 ) -> None:
     def boom(*args: Any, **kwargs: Any) -> Any:
         raise RuntimeError("SELECT * FROM secret_table; Traceback /home/user/03am")
 
     monkeypatch.setattr(harness.engine, "handle", boom)
     harness.say("/start")
+    # Error tak terduga: tidak ada yang di-commit, update dicoba ulang otomatis (backoff).
+    assert harness.transport.messages == {}
+    (item,) = harness.app.inbox.entries()
+    assert item.status.value == "received" and item.attempts == 1
+    _exhaust_retries(harness, clock)
     text = harness.transport.last().text
     assert text == texts.INTERNAL_ERROR
     assert "SELECT" not in text and "Traceback" not in text
+    (item,) = harness.app.inbox.entries()
+    assert item.status.value == "failed" and item.attempts == harness.app.inbox.max_attempts
 
 
-def test_sqlite_busy_gets_friendly_message_and_retry(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
+def test_sqlite_busy_is_retried_then_reported(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch, clock: Any
 ) -> None:
     calls = {"n": 0}
     original = harness.engine.handle
@@ -146,8 +161,10 @@ def test_sqlite_busy_gets_friendly_message_and_retry(
 
     monkeypatch.setattr(harness.engine, "handle", locked)
     harness.say("/start")
+    _exhaust_retries(harness, clock)
     assert harness.transport.last().text == texts.DB_BUSY
-    # CoreRunner mencoba ulang error "locked" sebelum menyerah.
+    assert calls["n"] == harness.app.inbox.max_attempts
+    # CoreRunner juga mencoba ulang error "locked" sebelum menyerah.
     runner = CoreRunner(busy_retries=2, busy_delay_s=0)
     attempts = {"n": 0}
 
@@ -238,7 +255,7 @@ def test_callbacks_never_reach_the_text_intent_parser(tg_app: Any) -> None:
 
     h = Harness(tg_app)
     h.engine = ConversationEngine(tg_app.controller, tg_app.conversations, parser=SpyParser())
-    h.bot._engine = h.engine
+    h.processor._engine = h.engine
     try:
         h.say("halo")
         h.press("Buat Dokumenter")

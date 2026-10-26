@@ -45,6 +45,7 @@ Aturan batas modul (dicek `import-linter`, kontrak di `pyproject.toml`):
 - Trigger di `0003_security_invariants.sql` adalah lapisan keamanan kedua (gate butuh keputusan tercatat, otorisasi belanja butuh approval sah, uang integer, ledger final). **Jangan dihapus atau dilonggarkan**; kalau perlu diubah, buat migrasi baru + ADR + test.
 - `interfaces/mcp` (nanti) tidak boleh membuka aksi approve/reject/budget/ekspor.
 - Trigger outbox di `0005_interface_outbox.sql` membaca `audit_log` (`episode.transition`, `approval.requested`) dan `jobs`. Mengganti nama aksi audit itu = migrasi baru untuk trigger outbox.
+- Trigger `0006_durable_updates.sql` melarang update yang sudah `committed` diproses ulang dan melarang baris balasan tanpa commit. Jangan dilonggarkan.
 
 ## 4. Standar Kode
 
@@ -75,6 +76,8 @@ Aturan batas modul (dicek `import-linter`, kontrak di `pyproject.toml`):
 - Keputusan sensitif (approval, revisi, batal, aktivasi budget, buat episode) **hanya** lewat kode tombol sekali pakai (`ActionCodes`). Jangan menaruh token/ID approval mentah di `callback_data` aksi; semua `callback_data` ≤ 64 byte (`callbacks.encode`).
 - `IntentParser` hanya memahami teks; tidak boleh menghasilkan keputusan approval dan tidak pernah menerima callback. Kalau ambigu → tanya balik.
 - Tidak ada pengiriman Telegram di dalam transaksi DB. Notifikasi lewat outbox (trigger DB) + dispatcher.
+- Update owner diproses lewat `UpdateProcessor` (ADR-0013): simpan ke `ui_inbox` → klaim (lease + fencing) → `ConversationEngine.handle` + `UpdateInbox.commit` + baris balasan dalam **satu transaksi** → kirim dari `ui_reply_outbox`. Jangan menandai update selesai sebelum commit, jangan mengirim balasan langsung dari engine, dan jangan menaruh I/O di dalam `ConversationEngine` (seluruhnya berjalan di dalam transaksi bisnis).
+- Efek bisnis exactly-once; pengiriman Telegram at-least-once (`sendMessage` bisa dobel setelah crash). Jangan mengklaim exactly-once delivery.
 - Semua akses DB dari proses bot lewat `CoreRunner` (satu thread). Worker memakai koneksi sendiri.
 - Teks dinamis di pesan HTML wajib di-`esc()`; teks statis di `interfaces/telegram/texts.py`.
 - Test bot memakai fake transport (`tests/telegram/fakes.py`), tanpa jaringan.
@@ -135,7 +138,8 @@ Jalankan **lint, typecheck, lint-imports, dan test** sebelum commit.
 - Fixture utama di `tests/conftest.py`: `app`, `active_app` (periode sudah aktif), `make_app` (config bisa diubah lewat `edit_budget`; provider bisa diganti lewat `llm_provider_factory=` / `source_provider=`), `clock` (`FakeClock`, mulai 2026-11-03 09:00 WIB).
 - Skenario gagal provider pakai `MockLLMProvider(faults=..., overrides=..., fixture_dirs=[tmp_path])`, bukan monkeypatch.
 - pytest memakai `--disable-socket --allow-unix-socket`: socket Unix lokal hanya untuk socketpair event loop asyncio; socket jaringan (AF_INET/AF_INET6) tetap diblokir.
-- Test bot Telegram: `Harness` + `FakeTransport` di `tests/telegram/fakes.py` (kirim teks, tekan tombol, jalankan worker, kirim notifikasi).
+- Test bot Telegram: `Harness` + `FakeTransport` di `tests/telegram/fakes.py` (kirim teks, tekan tombol, jalankan worker, kirim notifikasi, `recover()`).
+- Crash recovery: `Harness(fault=...)` + `SimulatedCrash` (BaseException) di titik `processor.AFTER_RECEIVE / BEFORE_COMMIT / AFTER_COMMIT / BEFORE_SEND / AFTER_SEND` (`tests/telegram/test_crash_recovery.py`).
 - Setiap perilaku baru = test baru. Bug fix = test yang mereproduksi bug dulu.
 - Gunakan fake clock & ID deterministik; jangan bergantung urutan waktu nyata.
 - Media test sekecil mungkin (misal 160×284, 1–2 detik) supaya CI cepat.

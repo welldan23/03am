@@ -12,6 +12,7 @@ from studio.bootstrap import App
 from studio.interfaces.telegram.bot import CoreRunner, StudioBot
 from studio.interfaces.telegram.engine import ConversationEngine
 from studio.interfaces.telegram.notifier import NotificationDispatcher
+from studio.interfaces.telegram.processor import UpdateProcessor
 from studio.interfaces.telegram.transport import TransportError
 from studio.interfaces.telegram.types import Button, Inbound, Keyboard, Screen
 
@@ -96,11 +97,26 @@ class Harness:
         *,
         monotonic: Callable[[], float] | None = None,
         first_update_id: int = 1,
+        fault: Callable[[str], None] | None = None,
+        owner: str = "bot-test",
+        transport: FakeTransport | None = None,
     ) -> None:
         self.app = app
-        self.transport = FakeTransport()
+        self.transport = transport or FakeTransport()
         self.core = CoreRunner(busy_retries=0)
         self.engine = ConversationEngine(app.controller, app.conversations)
+        self.processor = UpdateProcessor(
+            db=app.db,
+            clock=app.clock,
+            controller=app.controller,
+            engine=self.engine,
+            inbox=app.inbox,
+            replies=app.replies,
+            transport=self.transport,
+            core=self.core,
+            owner=owner,
+            fault=fault or (lambda point: None),
+        )
         self.notifier = NotificationDispatcher(
             controller=app.controller,
             engine=self.engine,
@@ -109,15 +125,14 @@ class Harness:
             core=self.core,
             clock=app.clock,
             actions=app.actions,
-            updates=app.updates,
+            inbox=app.inbox,
         )
         kwargs: dict[str, Any] = {}
         if monotonic is not None:
             kwargs["monotonic"] = monotonic
         self.bot = StudioBot(
             controller=app.controller,
-            engine=self.engine,
-            updates=app.updates,
+            processor=self.processor,
             audit=app.audit,
             transport=self.transport,
             core=self.core,
@@ -172,6 +187,9 @@ class Harness:
 
     def work(self) -> int:
         return self.app.worker("tg-test-worker").run_until_idle()
+
+    def recover(self) -> int:
+        return self.run(self.processor.recover())
 
     def notify(self) -> int:
         return self.run(self.notifier.dispatch_once())

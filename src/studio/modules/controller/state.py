@@ -1,5 +1,4 @@
-"""State antarmuka chat yang harus selamat dari restart: update yang sudah diproses dan
-konteks percakapan per chat."""
+"""State percakapan per chat yang harus selamat dari restart (lihat juga `inbox`)."""
 
 from __future__ import annotations
 
@@ -12,32 +11,6 @@ from studio.infra.db import Database
 from studio.shared.clock import Clock, from_iso, to_iso
 
 IDLE = "idle"
-
-
-class UpdateLog:
-    """Deduplikasi update dari kanal chat (Telegram bisa mengirim ulang update yang sama)."""
-
-    def __init__(self, db: Database, clock: Clock) -> None:
-        self._db = db
-        self._clock = clock
-
-    def register(self, channel: str, update_id: int) -> bool:
-        """True kalau update baru; False kalau sudah pernah diproses."""
-        with self._db.transaction():
-            cursor = self._db.execute(
-                "INSERT OR IGNORE INTO ui_processed_updates (channel, update_id, received_at)"
-                " VALUES (?, ?, ?)",
-                (channel, update_id, to_iso(self._clock.now())),
-            )
-        return cursor.rowcount == 1
-
-    def prune(self, *, older_than: timedelta) -> int:
-        cutoff = to_iso(self._clock.now() - older_than)
-        with self._db.transaction():
-            cursor = self._db.execute(
-                "DELETE FROM ui_processed_updates WHERE received_at <= ?", (cutoff,)
-            )
-        return cursor.rowcount
 
 
 @dataclass(frozen=True)

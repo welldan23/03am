@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     notify_idle_seconds: float = Field(default=10.0, gt=0, le=300)
     # Jalankan worker job di proses bot (thread terpisah, koneksi DB sendiri).
     telegram_run_worker: bool = True
+    # Pemrosesan update yang tahan crash (ADR-0013): lease pemroses update & jatah percobaan.
+    update_lease_seconds: int = Field(default=30, ge=5, le=600)
+    update_max_attempts: int = Field(default=5, ge=1, le=20)
 
     @property
     def db_path(self) -> Path:

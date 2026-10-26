@@ -177,6 +177,10 @@ MVP = Fase 0–5 selesai: satu episode bisa dibuat lengkap lewat Telegram dengan
 - [x] AC3.19 Token bot tidak muncul di repr, log structlog, maupun log standar (aiogram). — `test_bot_token_never_appears_in_logs_or_repr`
 - [x] AC3.20 Semua test offline dengan fake transport; regresi Fase 1–2 tetap lulus. — seluruh `tests/`
 
+*Hotfix reliability ([audit](reviews/phase-3-reliability-audit.md), [ADR-0013](adr/0013-pemrosesan-update-tahan-crash.md))*
+- [x] AC3.21 Update tidak dianggap selesai sebelum aksi bisnis di-commit; aksi bisnis + status + balasan atomik; crash sebelum commit → diproses ulang, setelah commit → tidak dijalankan ulang. — `test_crash_before_commit_is_reprocessed_exactly_once`, `test_crash_after_commit_delivers_reply_without_rerunning_action`
+- [x] AC3.22 Balasan yang belum terkirim dipulihkan dari outbox persisten; urutan pesan terjaga; duplikat update/callback tidak menggandakan efek; dua pemroses tidak bisa commit ganda (fencing token). — `tests/telegram/test_crash_recovery.py`
+
 ---
 
 ## Fase 4 — Aset, TTS, Render & Ekspor (Mock)

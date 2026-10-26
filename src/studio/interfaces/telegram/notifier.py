@@ -19,7 +19,7 @@ from functools import partial
 from studio.interfaces.telegram.bot import CoreRunner, send_screen
 from studio.interfaces.telegram.engine import CHANNEL, ConversationEngine
 from studio.interfaces.telegram.transport import Transport, TransportError
-from studio.modules.controller import ActionCodes, StudioController, UpdateLog
+from studio.modules.controller import ActionCodes, StudioController, UpdateInbox
 from studio.modules.notifications import Notification, Outbox
 from studio.shared.clock import Clock
 from studio.shared.logging import get_logger
@@ -38,7 +38,7 @@ class NotificationDispatcher:
         core: CoreRunner,
         clock: Clock,
         actions: ActionCodes | None = None,
-        updates: UpdateLog | None = None,
+        inbox: UpdateInbox | None = None,
         consumer: str = "telegram-notifier",
         idle_seconds: float = 10.0,
         batch_size: int = 20,
@@ -51,7 +51,7 @@ class NotificationDispatcher:
         self._core = core
         self._clock = clock
         self._actions = actions
-        self._updates = updates
+        self._inbox = inbox
         self._consumer = consumer
         self._idle = idle_seconds
         self._batch = batch_size
@@ -171,5 +171,5 @@ class NotificationDispatcher:
         self._last_prune = now
         if self._actions is not None:
             await self._core.run(partial(self._actions.prune, older_than=timedelta(days=7)))
-        if self._updates is not None:
-            await self._core.run(partial(self._updates.prune, older_than=timedelta(days=30)))
+        if self._inbox is not None:
+            await self._core.run(partial(self._inbox.prune, older_than=timedelta(days=30)))

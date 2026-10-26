@@ -341,3 +341,6 @@ Transcript berikut dihasilkan dari bot asli (engine + controller + SQLite + mock
 | "Database studio sedang sibuk" | Proses lain memegang lock SQLite > 5 detik. Coba lagi; bot sudah mencoba ulang otomatis 3×. |
 | Notifikasi tidak muncul | Pastikan Anda pernah mengirim `/start` ke bot (Telegram melarang bot memulai chat). Cek tabel `notification_outbox` (`status`, `last_error`). Notifikasi yang gagal permanen berstatus `dead`. |
 | Ingin melihat apa yang terjadi | `uv run studio episode history <ID>` (audit log), `uv run studio jobs list`. |
+| Bot mati di tengah memproses pesan/tombol | Tidak perlu apa-apa: saat start, bot memproses ulang update yang belum di-commit dan mengirim balasan yang tertunda (tabel `ui_inbox` & `ui_reply_outbox`). Aksi yang sudah di-commit tidak dijalankan dua kali. |
+| Menerima pesan bot dua kali setelah bot crash | Batas Bot API (tidak ada idempotency key untuk `sendMessage`). Tombol di pesan dobel adalah tombol yang sama dan tetap hanya berlaku sekali. Lihat ADR-0013. |
+| Pesan dijawab "Database studio sedang sibuk" | Update sudah dicoba ulang otomatis sampai `STUDIO_UPDATE_MAX_ATTEMPTS` kali tanpa berhasil; tidak ada aksi yang dijalankan. Kirim ulang perintahnya. |

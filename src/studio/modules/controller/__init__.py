@@ -8,6 +8,16 @@ from studio.modules.controller.actions import (
     IssuedGroup,
     new_code,
 )
+from studio.modules.controller.inbox import (
+    InboxItem,
+    InboxStatus,
+    Receipt,
+    ReplyOutbox,
+    ReplyRow,
+    ReplyStatus,
+    UpdateInbox,
+    UpdateLeaseLostError,
+)
 from studio.modules.controller.service import (
     MAX_NOTES_CHARS,
     SIMULATED_GATES,
@@ -15,7 +25,7 @@ from studio.modules.controller.service import (
     NotReadyError,
     StudioController,
 )
-from studio.modules.controller.state import IDLE, Conversation, ConversationStore, UpdateLog
+from studio.modules.controller.state import IDLE, Conversation, ConversationStore
 from studio.modules.controller.views import (
     ActionReply,
     ApprovalCard,
@@ -59,16 +69,23 @@ __all__ = [
     "EpisodeDetail",
     "EpisodeFilter",
     "EpisodeSummary",
+    "InboxItem",
+    "InboxStatus",
     "IssuedGroup",
     "NotReadyError",
     "Outcome",
     "Page",
     "ProductionItem",
+    "Receipt",
+    "ReplyOutbox",
+    "ReplyRow",
+    "ReplyStatus",
     "ResearchView",
     "ReviseCard",
     "ScriptView",
     "StudioController",
     "StudioSettingsView",
-    "UpdateLog",
+    "UpdateInbox",
+    "UpdateLeaseLostError",
     "new_code",
 ]

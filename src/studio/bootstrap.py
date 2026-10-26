@@ -32,8 +32,9 @@ from studio.modules.controller import (
     ActionCodes,
     ControllerConfig,
     ConversationStore,
+    ReplyOutbox,
     StudioController,
-    UpdateLog,
+    UpdateInbox,
 )
 from studio.modules.episodes import EpisodeService
 from studio.modules.notifications import Outbox
@@ -77,7 +78,8 @@ class App:
     controller: StudioController
     actions: ActionCodes
     conversations: ConversationStore
-    updates: UpdateLog
+    inbox: UpdateInbox
+    replies: ReplyOutbox
     outbox: Outbox
 
     def worker(self, worker_id: str | None = None) -> Worker:
@@ -233,6 +235,12 @@ def build_app(
         conversations=ConversationStore(
             db, clock, step_ttl=timedelta(minutes=settings.conversation_step_ttl_minutes)
         ),
-        updates=UpdateLog(db, clock),
+        inbox=UpdateInbox(
+            db,
+            clock,
+            lease_seconds=settings.update_lease_seconds,
+            max_attempts=settings.update_max_attempts,
+        ),
+        replies=ReplyOutbox(db, clock, lease_seconds=settings.update_lease_seconds),
         outbox=Outbox(db, clock),
     )

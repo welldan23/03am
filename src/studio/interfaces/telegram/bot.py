@@ -1,83 +1,43 @@
-"""Bot Studio (async): gerbang keamanan + jembatan ke inti sinkron.
+"""Bot Studio (async): gerbang keamanan di depan pemrosesan update yang tahan crash.
 
 Urutan untuk setiap update:
 1. hanya chat pribadi; grup/channel diabaikan;
 2. identitas = `from_user.id` (bukan username) → harus owner di allowlist; selain itu ditolak
-   dan dicatat di audit log (dibatasi supaya log tidak dibanjiri);
-3. update yang sudah pernah diproses (dikirim ulang Telegram) diabaikan;
-4. `ConversationEngine` dijalankan di thread inti (satu thread untuk semua akses database);
-5. hasilnya dikirim lewat `Transport` (di luar transaksi apa pun).
+   dan dicatat di audit log (dibatasi supaya log tidak dibanjiri). Update orang asing tidak
+   pernah disimpan;
+3. sisanya diserahkan ke `UpdateProcessor` (ADR-0013): simpan → klaim → aksi bisnis + commit
+   dalam satu transaksi → kirim balasan dari outbox persisten.
 
 Error tidak terduga tidak pernah diteruskan ke user (tanpa traceback / detail internal).
 """
 
 from __future__ import annotations
 
-import asyncio
 import sqlite3
 import time
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
 from functools import partial
-from typing import Any, TypeVar
 
 from studio.interfaces.telegram import render, texts
-from studio.interfaces.telegram.engine import CHANNEL, ConversationEngine
+from studio.interfaces.telegram.core import CoreRunner, is_busy
+from studio.interfaces.telegram.engine import CHANNEL
+from studio.interfaces.telegram.processor import UpdateProcessor, error_reply
 from studio.interfaces.telegram.transport import Transport, TransportError
 from studio.interfaces.telegram.types import (
     AnswerCallback,
     EditKeyboard,
     EditMessage,
     Inbound,
-    Reply,
     Screen,
     SendMessage,
 )
 from studio.modules.audit import AuditLog
-from studio.modules.controller import StudioController, UpdateLog
+from studio.modules.controller import StudioController
 from studio.shared.logging import get_logger
 
-T = TypeVar("T")
+__all__ = ["CoreRunner", "StudioBot", "deliver_action", "is_busy", "send_screen"]
 
 _log = get_logger("studio.telegram")
-
-
-def is_busy(exc: BaseException) -> bool:
-    return isinstance(exc, sqlite3.OperationalError) and any(
-        marker in str(exc).lower() for marker in ("locked", "busy")
-    )
-
-
-class CoreRunner:
-    """Satu thread untuk semua pemanggilan inti sinkron.
-
-    Koneksi SQLite & penghitung transaksi `Database` tidak thread-safe, jadi semua akses dari
-    proses bot diserialkan di sini. Worker job memakai koneksinya sendiri di thread lain.
-    "database is locked" (penulis lain memegang lock lebih lama dari busy_timeout) dicoba
-    ulang beberapa kali dengan jeda.
-    """
-
-    def __init__(self, *, busy_retries: int = 3, busy_delay_s: float = 0.2) -> None:
-        self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="studio-core")
-        self._busy_retries = busy_retries
-        self._busy_delay = busy_delay_s
-
-    def _with_retry(self, fn: Callable[..., T], *args: Any) -> T:
-        for attempt in range(self._busy_retries + 1):
-            try:
-                return fn(*args)
-            except sqlite3.OperationalError as exc:
-                if not is_busy(exc) or attempt == self._busy_retries:
-                    raise
-                time.sleep(self._busy_delay * (2**attempt))
-        raise AssertionError("unreachable")  # pragma: no cover
-
-    async def run(self, fn: Callable[..., T], *args: Any) -> T:
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(self._executor, partial(self._with_retry, fn, *args))
-
-    def shutdown(self) -> None:
-        self._executor.shutdown(wait=True)
 
 
 class StudioBot:
@@ -87,8 +47,7 @@ class StudioBot:
         self,
         *,
         controller: StudioController,
-        engine: ConversationEngine,
-        updates: UpdateLog,
+        processor: UpdateProcessor,
         audit: AuditLog,
         transport: Transport,
         core: CoreRunner,
@@ -96,14 +55,17 @@ class StudioBot:
         monotonic: Callable[[], float] = time.monotonic,
     ) -> None:
         self._controller = controller
-        self._engine = engine
-        self._updates = updates
+        self._processor = processor
         self._audit = audit
         self._transport = transport
         self._core = core
         self._on_activity = on_activity
         self._monotonic = monotonic
         self._last_rejection: dict[int, float] = {}
+
+    @property
+    def processor(self) -> UpdateProcessor:
+        return self._processor
 
     async def handle(self, inbound: Inbound) -> None:
         if inbound.chat_type != "private" or inbound.user_id is None:
@@ -114,25 +76,16 @@ class StudioBot:
             await self._reject_stranger(inbound)
             return
         try:
-            fresh = await self._core.run(self._updates.register, CHANNEL, inbound.update_id)
-        except sqlite3.Error:
-            _log.warning("telegram.dedupe_failed", update_id=inbound.update_id)
-            await self._deliver(self._error_reply(inbound, texts.DB_BUSY))
-            return
-        if not fresh:
-            _log.info("telegram.duplicate_update", update_id=inbound.update_id)
-            if inbound.callback_id:
-                await self._safe_answer(inbound.callback_id, "")
-            return
-        try:
-            reply = await self._core.run(self._engine.handle, inbound, actor)
+            await self._processor.submit(inbound, actor)
         except sqlite3.Error as exc:
-            _log.warning("telegram.db_error", update_id=inbound.update_id, busy=is_busy(exc))
-            reply = self._error_reply(inbound, texts.DB_BUSY)
-        except Exception:
-            _log.exception("telegram.handler_failed", update_id=inbound.update_id)
-            reply = self._error_reply(inbound, texts.INTERNAL_ERROR)
-        await self._deliver(reply)
+            # Gagal menyimpan update (DB sibuk lama): belum ada yang tercatat, jadi minta
+            # owner mengulang. Kalau update sudah tersimpan, pemulihan yang melanjutkan.
+            _log.warning("telegram.receive_failed", update_id=inbound.update_id, busy=is_busy(exc))
+            for action in error_reply(inbound, texts.DB_BUSY).actions:
+                try:
+                    await deliver_action(self._transport, action)
+                except TransportError:
+                    break
         if self._on_activity is not None:
             self._on_activity()
 
@@ -174,22 +127,7 @@ class StudioBot:
         elif first:
             await self._safe_send(inbound.chat_id, Screen(texts.NOT_OWNER))
 
-    def _error_reply(self, inbound: Inbound, message: str) -> Reply:
-        reply = Reply()
-        if inbound.callback_id:
-            reply.answer(inbound.callback_id, message, alert=True)
-        else:
-            reply.send(inbound.chat_id, Screen(message, render.rows(render.menu_row())))
-        return reply
-
     # --- pengiriman ------------------------------------------------------------------
-
-    async def _deliver(self, reply: Reply) -> None:
-        for action in reply.actions:
-            try:
-                await deliver_action(self._transport, action)
-            except TransportError as exc:
-                _log.warning("telegram.send_failed", error=str(exc), retryable=exc.retryable)
 
     async def _safe_answer(self, callback_id: str, text: str) -> None:
         try:
