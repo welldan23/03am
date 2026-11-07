@@ -1,0 +1,230 @@
+1
+00:00:01,000 --> 00:00:04,500
+Fajar menyingsing di atas sawah Nusantara.
+
+2
+00:00:05,250 --> 00:00:10,250
+Selama berabad-abad, petani membaca alam:
+langit, angin, dan tanah.
+
+3
+00:00:11,250 --> 00:00:16,000
+Di Bali, sistem subak membagi air
+secara adil sejak abad ke-9.
+
+4
+00:00:16,750 --> 00:00:21,500
+Kini cuaca makin sulit ditebak,
+dan setiap tetes air makin berharga.
+
+5
+00:00:31,250 --> 00:00:35,750
+Internet of Things (IoT) adalah jaringan
+benda yang saling terhubung.
+
+6
+00:00:36,250 --> 00:00:41,000
+Benda itu bisa mengukur, mengirim data,
+bahkan bertindak sendiri.
+
+7
+00:00:44,500 --> 00:00:48,000
+Sensor di lahan mengukur kondisi
+tanah, air, dan cuaca.
+
+8
+00:00:48,500 --> 00:00:52,500
+Gateway mengirimkannya secara nirkabel,
+hingga beberapa kilometer.
+
+9
+00:00:53,000 --> 00:00:57,000
+Data diolah di cloud, lalu tampil
+di ponsel petani.
+
+10
+00:00:57,500 --> 00:01:00,750
+Informasi pun berubah menjadi
+tindakan di lahan.
+
+11
+00:01:01,500 --> 00:01:08,500
+Hasilnya: sawah yang bisa “berbicara”
+tentang apa yang ia butuhkan.
+
+12
+00:01:11,500 --> 00:01:16,000
+Di tengah lahan, stasiun kecil bertenaga
+surya bekerja siang dan malam.
+
+13
+00:01:16,750 --> 00:01:20,500
+Ia mencatat suhu, kelembapan udara,
+curah hujan, dan angin.
+
+14
+00:01:21,500 --> 00:01:26,500
+Di bawah tanah, sensor kelembapan
+mengukur air di beberapa kedalaman.
+
+15
+00:01:27,250 --> 00:01:32,500
+Petani jadi tahu: apakah air sudah
+sampai ke akar, atau belum.
+
+16
+00:01:33,250 --> 00:01:37,000
+Pengukuran diulang setiap beberapa menit.
+
+17
+00:01:38,500 --> 00:01:43,500
+Sensor lain memantau pH dan suhu tanah,
+yang menentukan kesehatan tanaman.
+
+18
+00:01:44,250 --> 00:01:49,000
+Semua angka ini dikirim otomatis,
+tanpa perlu dicatat dengan tangan.
+
+19
+00:01:51,500 --> 00:01:55,750
+Air adalah sumber hidup sawah,
+namun jumlahnya terbatas.
+
+20
+00:01:56,250 --> 00:01:59,000
+Bagaimana membaginya dengan cermat?
+
+21
+00:02:00,000 --> 00:02:05,000
+Saat sensor mendeteksi tanah mengering,
+sistem langsung memberi tanda.
+
+22
+00:02:05,750 --> 00:02:11,000
+Katup terbuka otomatis, dan air mengalir
+hanya ke petak yang membutuhkan.
+
+23
+00:02:11,750 --> 00:02:17,500
+Begitu kelembapan cukup, katup menutup.
+Tidak ada air yang terbuang percuma.
+
+24
+00:02:19,000 --> 00:02:23,750
+Irigasi tetes membawa air
+langsung ke akar tanaman.
+
+25
+00:02:24,500 --> 00:02:29,000
+Kearifan subak dan teknologi baru
+bisa berjalan berdampingan.
+
+26
+00:02:31,250 --> 00:02:36,000
+Dari udara, drone melihat apa
+yang tak terlihat dari pematang.
+
+27
+00:02:38,500 --> 00:02:43,000
+Drone terbang mengikuti rute otomatis,
+memotret sawah petak demi petak.
+
+28
+00:02:43,750 --> 00:02:49,000
+Ratusan foto digabung menjadi satu
+peta sawah yang utuh.
+
+29
+00:02:50,500 --> 00:02:55,500
+Kamera khusus membaca warna daun
+untuk menilai kesehatan tanaman.
+
+30
+00:02:56,250 --> 00:03:01,000
+Area yang kekurangan air atau terserang
+hama terlihat lebih awal.
+
+31
+00:03:02,500 --> 00:03:08,500
+Drone juga bisa menyemprot pupuk dan
+pestisida tepat di titik yang perlu.
+
+32
+00:03:11,500 --> 00:03:16,000
+Semua data bermuara di satu tempat:
+dasbor pertanian.
+
+33
+00:03:16,750 --> 00:03:21,500
+Di ponsel atau komputer, petani melihat
+kondisi sawahnya saat ini.
+
+34
+00:03:22,250 --> 00:03:27,000
+Grafik menunjukkan kapan tanah mulai
+kering, hari demi hari.
+
+35
+00:03:27,750 --> 00:03:33,000
+Peta menandai petak yang perlu
+diperhatikan lebih dulu.
+
+36
+00:03:33,750 --> 00:03:38,500
+Peringatan dikirim otomatis, misalnya saat
+hujan diprakirakan turun.
+
+37
+00:03:39,250 --> 00:03:44,000
+Irigasi bisa ditunda,
+dan air pun bisa dihemat.
+
+38
+00:03:44,750 --> 00:03:49,000
+Keputusan tak lagi berdasarkan tebakan,
+melainkan data.
+
+39
+00:03:51,500 --> 00:03:56,000
+Manfaatnya nyata: air lebih hemat,
+pupuk lebih tepat sasaran.
+
+40
+00:03:56,750 --> 00:04:00,500
+Hasil panen pun lebih mudah diprediksi.
+
+41
+00:04:01,500 --> 00:04:06,000
+Masalah terdeteksi lebih awal,
+sebelum menjadi kerugian.
+
+42
+00:04:06,750 --> 00:04:10,000
+Petani bekerja lebih cerdas,
+bukan lebih keras.
+
+43
+00:04:11,500 --> 00:04:16,000
+Namun jalannya tidak selalu mudah.
+Perangkat masih terasa mahal.
+
+44
+00:04:16,750 --> 00:04:21,500
+Di banyak desa, sinyal internet
+belum stabil.
+
+45
+00:04:22,250 --> 00:04:29,000
+Petani juga perlu pendampingan
+agar teknologi benar-benar terpakai.
+
+46
+00:04:31,500 --> 00:04:36,250
+Petani muda mulai bertani
+dengan cara-cara baru.
+
+47
+00:04:37,000 --> 00:04:41,750
+Data, sensor, dan otomasi membuat lahan
+sempit pun bisa lebih produktif.

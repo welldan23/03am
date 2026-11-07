@@ -29,5 +29,6 @@ File ini dibuat otomatis oleh `npm run fetch-assets`. Jangan diedit manual.
 | `images/s8-hydroponic-farmer.jpg` | Hydroponic farming, an urban farming solution.jpg | Maizal Chaniago | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [wikimedia-commons](https://commons.wikimedia.org/wiki/File:Hydroponic_farming,_an_urban_farming_solution.jpg) |
 | `images/s8-hydroponic-rows.jpg` | Budidaya Tanaman Sayur Secara Hidroponik di Kebun SAP Garden Hidroponik, Indonesia.jpg | Setiawanap | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [wikimedia-commons](https://commons.wikimedia.org/wiki/File:Budidaya_Tanaman_Sayur_Secara_Hidroponik_di_Kebun_SAP_Garden_Hidroponik,_Indonesia.jpg) |
 | `images/s8-greenhouse-wide.jpg` | CDC South Aquaponics Raft Tank 1 2010-07-17.jpg | Bryghtknyght | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [wikimedia-commons](https://commons.wikimedia.org/wiki/File:CDC_South_Aquaponics_Raft_Tank_1_2010-07-17.jpg) |
+| `audio/affirmations.mp3` | Scott Buckley - Affirmations.oga | Scott Buckley | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [wikimedia-commons](https://commons.wikimedia.org/wiki/File:Scott_Buckley_-_Affirmations.oga) |
 
 Foto dengan lisensi CC BY-SA: versi yang di-grade/di-crop di video ini juga dibagikan di bawah lisensi yang sama.

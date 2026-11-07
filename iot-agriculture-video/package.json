@@ -17,7 +17,9 @@
     "lambda:check": "node scripts/lambda-preflight.mjs",
     "bundle": "remotion bundle src/index.ts",
     "lambda:render": "node scripts/lambda-render.mjs",
-    "search-photos": "node scripts/search-photos.mjs"
+    "search-photos": "node scripts/search-photos.mjs",
+    "voiceover:script": "tsx scripts/voiceover.ts script",
+    "voiceover:scan": "tsx scripts/voiceover.ts scan"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "5.3.0",

@@ -3,6 +3,10 @@ import { AbsoluteFill, Img, useCurrentFrame, useVideoConfig } from 'remotion';
 import { coverTransform, handheld, poseAt, type CameraMove } from '../lib/camera';
 import { GRADES, type GradeName } from '../styles/grades';
 
+/** Selisih maksimum lapisan depan vs latar — cukup untuk terasa dalam, terlalu kecil untuk tampak dobel. */
+const MAX_FG_SHIFT_PX = 3;
+const MAX_FG_SCALE = 1.003;
+
 export interface ParallaxOptions {
   /** Garis horizon (persen tinggi gambar). Area di bawahnya = lapisan depan. */
   horizon: number;
@@ -86,7 +90,18 @@ export const CinematicPhoto: React.FC<CinematicPhotoProps> = ({
       zoom: (start.zoom + (pose.zoom - start.zoom) * parallax.depth) * overscan * 1.01,
       rotate: pose.rotate,
     };
-    const fg = coverTransform(fgPose, { width, height }, { width: W, height: H });
+    const raw = coverTransform(fgPose, { width, height }, { width: W, height: H });
+    // Batasi selisih antar-lapisan. Kalau terlalu jauh, objek yang melintasi
+    // horizon (pohon kelapa, orang) tampak dobel di area gradasi masker.
+    const lim = (v: number, max: number): number => Math.max(-max, Math.min(max, v));
+    const scaleRatio = Math.max(1 / MAX_FG_SCALE, Math.min(MAX_FG_SCALE, raw.scale / base.scale));
+    const fg = {
+      ...base,
+      scale: base.scale * scaleRatio,
+      // Zoom ekstra dipusatkan di tengah layar supaya tidak menggeser gambar.
+      tx: W / 2 - (W / 2 - base.tx) * scaleRatio + lim(raw.tx - base.tx, MAX_FG_SHIFT_PX),
+      ty: H / 2 - (H / 2 - base.ty) * scaleRatio + lim(raw.ty - base.ty, MAX_FG_SHIFT_PX),
+    };
     const feather = parallax.feather ?? 14;
     // Posisi horizon di layar mengikuti transform lapisan depan.
     const horizonPx = fg.ty + (parallax.horizon / 100) * fg.height * fg.scale;

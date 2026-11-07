@@ -1,6 +1,7 @@
 [
   {
     "id": "dawnPaddy",
+    "kind": "image",
     "file": "images/s1-dawn-paddy.jpg",
     "provider": "wikimedia-commons",
     "title": "Blue Morning.jpg",
@@ -13,6 +14,7 @@
   },
   {
     "id": "jatiluwihWide",
+    "kind": "image",
     "file": "images/s1-jatiluwih-wide.jpg",
     "provider": "wikimedia-commons",
     "title": "Rice terraces on Bali - Jatiluwih Rice Terraces - Indonesia 2.jpg",
@@ -25,6 +27,7 @@
   },
   {
     "id": "tegallalang",
+    "kind": "image",
     "file": "images/s1-tegallalang.jpg",
     "provider": "wikimedia-commons",
     "title": "Tegallalang Rice Terraces Bali.jpg",
@@ -37,6 +40,7 @@
   },
   {
     "id": "farmerHarvest",
+    "kind": "image",
     "file": "images/s1-farmer-harvest.jpg",
     "provider": "wikimedia-commons",
     "title": "Petani Memanen Padi di Area Sawah Tugu, Desa Tersidilor, Jawa Tengah.jpg",
@@ -49,6 +53,7 @@
   },
   {
     "id": "jatiluwihPanorama",
+    "kind": "image",
     "file": "images/s1-jatiluwih-panorama.jpg",
     "provider": "wikimedia-commons",
     "title": "Jatiluwih rice terraces SF0001 (cropped).jpg",
@@ -61,6 +66,7 @@
   },
   {
     "id": "droneSprayPaddy",
+    "kind": "image",
     "file": "images/s5-drone-spray-paddy.jpg",
     "provider": "wikimedia-commons",
     "title": "Agricultural drone spraying on paddy field.jpg",
@@ -73,6 +79,7 @@
   },
   {
     "id": "droneOverField",
+    "kind": "image",
     "file": "images/s5-drone-over-field.jpg",
     "provider": "wikimedia-commons",
     "title": "2018. Drone demonstration. Aerial Pesticide Application Training (APAT). Davis, California. (40800389955).jpg",
@@ -85,6 +92,7 @@
   },
   {
     "id": "baliAerial",
+    "kind": "image",
     "file": "images/s5-bali-aerial.jpg",
     "provider": "wikimedia-commons",
     "title": "Drone view of rice plantation on bali island with path to walk around and palms. (46229046541).jpg",
@@ -97,6 +105,7 @@
   },
   {
     "id": "paddyTopDown",
+    "kind": "image",
     "file": "images/s5-paddy-top-down.jpg",
     "provider": "wikimedia-commons",
     "title": "Rice Fields 2.jpg",
@@ -109,6 +118,7 @@
   },
   {
     "id": "droneRiceField",
+    "kind": "image",
     "file": "images/s5-drone-rice-field.jpg",
     "provider": "wikimedia-commons",
     "title": "Agricultural drone in use on rice field near Nisoshi, Aomori.jpg",
@@ -121,6 +131,7 @@
   },
   {
     "id": "soilProbe",
+    "kind": "image",
     "file": "images/s3-soil-probe.jpg",
     "provider": "wikimedia-commons",
     "title": "Soil temperature probe.jpg",
@@ -133,6 +144,7 @@
   },
   {
     "id": "solarSensorMast",
+    "kind": "image",
     "file": "images/s3-solar-sensor-mast.jpg",
     "provider": "wikimedia-commons",
     "title": "Weather station by Beach Road - geograph.org.uk - 6233639.jpg",
@@ -145,6 +157,7 @@
   },
   {
     "id": "dripKerala",
+    "kind": "image",
     "file": "images/s4-drip-kerala.jpg",
     "provider": "wikimedia-commons",
     "title": "Drip irrigation in Kerala.jpg",
@@ -157,6 +170,7 @@
   },
   {
     "id": "dripEmitter",
+    "kind": "image",
     "file": "images/s4-drip-emitter.jpg",
     "provider": "wikimedia-commons",
     "title": "Drip emitter.jpg",
@@ -169,6 +183,7 @@
   },
   {
     "id": "subakCanalFall",
+    "kind": "image",
     "file": "images/s4-subak-canal-fall.jpg",
     "provider": "wikimedia-commons",
     "title": "WikiSubak - Subak Aya Babahan - ES -15 Irigasi Sawah.jpg",
@@ -181,6 +196,7 @@
   },
   {
     "id": "subakStream",
+    "kind": "image",
     "file": "images/s4-subak-stream.jpg",
     "provider": "wikimedia-commons",
     "title": "Jatiluwih Rice Terrace - Subak Jatiluwih 47.jpg",
@@ -193,6 +209,7 @@
   },
   {
     "id": "riceGrainClose",
+    "kind": "image",
     "file": "images/s7-rice-grain-close.jpg",
     "provider": "wikimedia-commons",
     "title": "Wiki Subak-Ceking-12.jpg",
@@ -205,6 +222,7 @@
   },
   {
     "id": "farmerMountainDawn",
+    "kind": "image",
     "file": "images/s8-farmer-mountain-dawn.jpg",
     "provider": "wikimedia-commons",
     "title": "WikiSubak - Subak Umase - ES -3 Paddy Field in Bali.jpg",
@@ -217,6 +235,7 @@
   },
   {
     "id": "farmerTerraceWork",
+    "kind": "image",
     "file": "images/s7-farmer-terrace-work.jpg",
     "provider": "wikimedia-commons",
     "title": "Wiki Subak-Ceking-10.jpg",
@@ -229,6 +248,7 @@
   },
   {
     "id": "crackedSoilTop",
+    "kind": "image",
     "file": "images/s7-cracked-soil-top.jpg",
     "provider": "wikimedia-commons",
     "title": "Tanah Sawah Kering.jpg",
@@ -241,6 +261,7 @@
   },
   {
     "id": "riceDrySoil",
+    "kind": "image",
     "file": "images/s7-rice-dry-soil.jpg",
     "provider": "wikimedia-commons",
     "title": "Tanah Sawah yang Kering.jpg",
@@ -253,6 +274,7 @@
   },
   {
     "id": "dryField",
+    "kind": "image",
     "file": "images/s7-dry-field.jpg",
     "provider": "wikimedia-commons",
     "title": "Sawah Subik Danau Ranau.jpg",
@@ -265,6 +287,7 @@
   },
   {
     "id": "hydroponicFarmer",
+    "kind": "image",
     "file": "images/s8-hydroponic-farmer.jpg",
     "provider": "wikimedia-commons",
     "title": "Hydroponic farming, an urban farming solution.jpg",
@@ -277,6 +300,7 @@
   },
   {
     "id": "hydroponicRows",
+    "kind": "image",
     "file": "images/s8-hydroponic-rows.jpg",
     "provider": "wikimedia-commons",
     "title": "Budidaya Tanaman Sayur Secara Hidroponik di Kebun SAP Garden Hidroponik, Indonesia.jpg",
@@ -289,6 +313,7 @@
   },
   {
     "id": "greenhouseWide",
+    "kind": "image",
     "file": "images/s8-greenhouse-wide.jpg",
     "provider": "wikimedia-commons",
     "title": "CDC South Aquaponics Raft Tank 1 2010-07-17.jpg",
@@ -298,5 +323,19 @@
     "sourceUrl": "https://commons.wikimedia.org/wiki/File:CDC_South_Aquaponics_Raft_Tank_1_2010-07-17.jpg",
     "width": 3200,
     "height": 2400
+  },
+  {
+    "id": "musicAffirmations",
+    "kind": "audio",
+    "file": "audio/affirmations.mp3",
+    "provider": "wikimedia-commons",
+    "title": "Scott Buckley - Affirmations.oga",
+    "author": "Scott Buckley",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Scott_Buckley_-_Affirmations.oga",
+    "width": 0,
+    "height": 0,
+    "durationSec": 301.7225850340136
   }
 ]

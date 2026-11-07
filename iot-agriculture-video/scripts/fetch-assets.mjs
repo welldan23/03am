@@ -4,7 +4,7 @@
 // public/assets/credits/CREDITS.md. File yang sudah ada dilewati kecuali --force.
 // --optimize: perkecil juga file lama yang lebarnya > 3200px.
 import { execFileSync } from 'node:child_process';
-import { access, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { imageSize } from './lib/image-size.mjs';
@@ -51,6 +51,37 @@ for (const a of assets) {
 
     const out = path.join(root, 'public/assets', a.file);
     await mkdir(path.dirname(out), { recursive: true });
+
+    if (a.kind === 'audio') {
+      // Audio: unduh file asli lalu ubah ke MP3 192 kbps (didukung Chrome & Remotion).
+      if (force || !(await exists(out))) {
+        const src = await http(info.downloadUrl, { json: false });
+        const tmp = `${out}.src`;
+        await writeFile(tmp, src);
+        execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', tmp, '-vn', '-c:a', 'libmp3lame', '-b:a', '192k', out]);
+        await rm(tmp, { force: true });
+        console.log(`  ↳ disimpan ${a.file}`);
+      } else {
+        console.log('  ↳ sudah ada, dilewati');
+      }
+      credits.push({
+        id: a.id,
+        kind: 'audio',
+        file: a.file,
+        provider: 'wikimedia-commons',
+        title: info.title,
+        author: info.author,
+        license: info.license,
+        licenseUrl: info.licenseUrl ?? null,
+        sourceUrl: info.pageUrl,
+        width: 0,
+        height: 0,
+        durationSec: info.duration,
+      });
+      await sleep(1200);
+      continue;
+    }
+
     let buf;
     const fresh = force || !(await exists(out));
     if (fresh) {
@@ -67,6 +98,7 @@ for (const a of assets) {
 
     credits.push({
       id: a.id,
+      kind: 'image',
       file: a.file,
       provider: a.commonsTitle ? 'wikimedia-commons' : `openverse/${info.source}`,
       title: info.title,

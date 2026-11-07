@@ -8,6 +8,7 @@ import credits from './credits.generated.json';
  */
 export interface AssetCredit {
   id: string;
+  kind: 'image' | 'audio';
   file: string;
   provider: string;
   title: string;
@@ -19,11 +20,13 @@ export interface AssetCredit {
   height: number;
 }
 
-export const CREDITS: readonly AssetCredit[] = credits;
+export const CREDITS: readonly AssetCredit[] = credits as AssetCredit[];
+export const PHOTO_CREDITS = CREDITS.filter((c) => c.kind === 'image');
+export const AUDIO_CREDITS = CREDITS.filter((c) => c.kind === 'audio');
 
 /** id = kolom `id` di scripts/asset-sources.json. `npm run verify` mengecek semua pemakaian. */
 export const photo = (id: string): AssetCredit & { src: string } => {
-  const c = CREDITS.find((x) => x.id === id);
+  const c = PHOTO_CREDITS.find((x) => x.id === id);
   if (!c) throw new Error(`Aset tidak ada di credits.generated.json: ${id}. Jalankan npm run fetch-assets.`);
   return { ...c, src: staticFile(`assets/${c.file}`) };
 };

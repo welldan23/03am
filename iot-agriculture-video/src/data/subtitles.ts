@@ -107,10 +107,15 @@ const CUES: readonly SubtitleCueInput[] = [
   { scene: 'future', from: 7.0, to: 11.75, text: 'Data, sensor, dan otomasi membuat lahan\nsempit pun bisa lebih produktif.' },
 ];
 
-export const SUBTITLES: readonly SubtitleCue[] = CUES.map((c, i) => {
+const perScene = new Map<SceneId, number>();
+
+/** id = s<nomor scene>-<urutan>, mis. "s3-02" — juga nama file rekaman voice-over. */
+export const SUBTITLES: readonly SubtitleCue[] = CUES.map((c) => {
   const scene = getScene(c.scene);
+  const n = (perScene.get(c.scene) ?? 0) + 1;
+  perScene.set(c.scene, n);
   return {
-    id: `${c.scene}-${i}`,
+    id: `s${scene.number}-${String(n).padStart(2, '0')}`,
     scene: c.scene,
     startFrame: scene.startFrame + sec(c.from),
     endFrame: scene.startFrame + sec(c.to),

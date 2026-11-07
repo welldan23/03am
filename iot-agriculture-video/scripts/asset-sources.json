@@ -150,6 +150,12 @@
       "commonsTitle": "File:CDC South Aquaponics Raft Tank 1 2010-07-17.jpg",
       "file": "images/s8-greenhouse-wide.jpg",
       "width": 3264
+    },
+    {
+      "id": "musicAffirmations",
+      "kind": "audio",
+      "commonsTitle": "File:Scott Buckley - Affirmations.oga",
+      "file": "audio/affirmations.mp3"
     }
   ]
 }

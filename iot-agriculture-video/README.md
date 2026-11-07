@@ -8,7 +8,7 @@ pakai [Remotion](https://www.remotion.dev/) (React + TypeScript).
 | Resolusi | 1920×1080 (16:9) |
 | Frame rate | 24 fps |
 | Durasi | **7.200 frame = 300 detik**, dicek otomatis oleh `npm run verify` |
-| Audio | Tidak ada narasi, suara, atau dialog |
+| Audio | Musik instrumental (tanpa vokal). Siap ditambah voice-over rekaman manual |
 | Subtitle | Bahasa Indonesia, di-render langsung ke video (burned-in) |
 
 > **Status: 8/8 scene selesai.** Film penuh 5 menit bisa di-preview dan di-render.
@@ -56,6 +56,8 @@ Frame 0 memang hitam, karena film dibuka dengan *fade-in* dari hitam.
 | `npm run render` | Render final 1920×1080 H.264 CRF 18 → `out/iot-pertanian.mp4` |
 | `npm run search-photos -- "kata kunci" --sheet` | Cari foto berlisensi bebas di Wikimedia Commons + Openverse |
 | `npm run fetch-assets` | Unduh foto dari `asset-sources.json`, perkecil ke ukuran wajar, perbarui kredit lisensi |
+| `npm run voiceover:script` | Buat naskah rekaman (`voiceover/NASKAH-VOICEOVER.md`) + `voiceover/subtitles.srt` |
+| `npm run voiceover:scan` | Deteksi rekaman di `public/assets/voiceover/`, cek durasinya, aktifkan ducking musik |
 | `npm run lambda:check` | Cek kesiapan render AWS Lambda (offline, gratis) |
 | `npm run lambda:render` | Render di AWS Lambda, **default cuma dry-run** (lihat bawah) |
 
@@ -97,6 +99,8 @@ iot-agriculture-video/
 │  │  ├─ scenes.ts              storyboard 8 scene (timecode, judul, jenis transisi)
 │  │  ├─ subtitles.ts           semua teks layar (waktu relatif ke awal scene)
 │  │  ├─ facts.ts               angka faktual + sumbernya
+│  │  ├─ audio.ts               musik latar & level volume
+│  │  ├─ voiceover.ts           rekaman voice-over (dari voiceover.generated.json)
 │  │  ├─ assets.ts              akses foto bertipe + kredit
 │  │  └─ credits.generated.json dibuat oleh fetch-assets (lisensi, pembuat, URL sumber)
 │  ├─ lib/                      time.ts (detik/timecode → frame), camera.ts (matematika kamera)
@@ -110,6 +114,7 @@ iot-agriculture-video/
    ├─ fetch-assets.mjs          pengunduh + kompres + penolak lisensi yang tidak bebas
    ├─ lib/                      sources.mjs (Commons, Openverse, kebijakan lisensi), image-size.mjs
    ├─ verify-timeline.ts        validator timeline & subtitle
+   ├─ voiceover.ts              naskah rekaman, .srt, dan pemindai rekaman
    ├─ lambda-preflight.mjs      cek kesiapan Lambda tanpa menghubungi AWS
    └─ lambda-render.mjs        render Lambda (berpengaman, dry-run kecuali disetujui)
 ```
@@ -158,6 +163,11 @@ Rincian shot scene lain ada di komentar paling atas tiap file `src/scenes/SceneN
   menjelaskan cara kerja**, dan selalu diberi label *DATA ILUSTRASI*.
 - Scene 7 (manfaat & tantangan) sengaja kualitatif. Tidak ada persentase tanpa sumber.
 - Foto yang diambil di luar Indonesia diberi label lokasi aslinya (Kerala, India; Aomori, Jepang).
+
+### Catatan parallax
+Efek parallax 2.5D (satu foto dibelah jadi dua lapis) sengaja dibatasi maksimal 3 px. Kalau lebih
+dari itu, objek yang melintasi horizon (pohon kelapa, orang) tampak dobel. Rasa kedalaman utamanya
+datang dari lapisan kabut, debu, dan cahaya yang bergerak dengan kecepatan berbeda.
 
 ## Aset & lisensi
 
@@ -237,6 +247,30 @@ Angka yang muncul di layar disimpan di `src/data/facts.ts` lengkap dengan sumber
 
 - 7,46 juta ha lahan baku sawah nasional (Kementerian ATR/BPN, 2019)
 - 28,4 juta rumah tangga usaha pertanian (BPS, Sensus Pertanian 2023)
+
+## Musik & voice-over
+
+### Musik latar
+**"Affirmations" oleh Scott Buckley** (CC BY 4.0, via Wikimedia Commons). Instrumennya piano,
+string, dan synth, **tanpa vokal**. Durasinya 301,8 detik, jadi cukup satu lagu untuk seluruh
+film. Ada fade-in 2,5 detik di awal dan fade-out 5 detik di akhir. Atribusi otomatis tampil di
+kredit penutup (bagian MUSIK). Pengaturan volume ada di `src/data/audio.ts`.
+
+### Voice-over (rekaman suara sendiri)
+Film ini disiapkan untuk dinarasikan **manual** dengan membacakan subtitle-nya.
+
+1. `npm run voiceover:script`, lalu buka `voiceover/NASKAH-VOICEOVER.md`. Isinya 47 kalimat,
+   masing-masing dengan ID, waktu mulai, dan "ruang bicara" (detik sampai kalimat berikutnya).
+2. Rekam **satu file per kalimat** dan beri nama sesuai ID-nya: `s1-01.wav`, `s1-02.wav`, …
+   Atau rekam satu file utuh 5 menit sambil menonton video, beri nama `full.wav`.
+3. Taruh filenya di `public/assets/voiceover/`.
+4. `npm run voiceover:scan`. Rekaman terdeteksi, durasinya diukur, dan muncul peringatan kalau
+   ada yang kepanjangan sampai menabrak kalimat berikutnya.
+5. `npm run render`. Musik otomatis turun jadi latar (32%) dan mengecil lagi (14%) setiap kamu
+   bicara, dengan transisi halus.
+
+Mau ubah kalimat? Edit `src/data/subtitles.ts`, lalu jalankan ulang `voiceover:script`.
+Subtitle di layar dan naskah rekaman selalu sinkron karena sumbernya sama.
 
 ## Render lokal
 

@@ -65,7 +65,7 @@ export async function commonsInfo(title, width) {
     action: 'query',
     titles: title,
     prop: 'imageinfo',
-    iiprop: 'url|size|extmetadata',
+    iiprop: 'url|size|mime|extmetadata',
     iiurlwidth: String(width),
     iiextmetadatafilter: 'LicenseShortName|LicenseUrl|Artist',
     format: 'json',
@@ -77,7 +77,9 @@ export async function commonsInfo(title, width) {
   const m = ii.extmetadata ?? {};
   // Thumbnail Commons maksimal 3840px. Butuh lebih besar (mis. panorama) → ambil file asli,
   // nanti diperkecil sendiri oleh fetch-assets.
-  const useOriginal = width > 3840 || !ii.thumburl;
+  // Untuk audio/video, "thumburl" hanyalah ikon PNG — selalu ambil file asli.
+  const isImage = String(ii.mime ?? '').startsWith('image/');
+  const useOriginal = !isImage || width > 3840 || !ii.thumburl;
   return {
     title: title.replace(/^File:/, ''),
     author: stripHtml(m.Artist?.value),
@@ -87,6 +89,7 @@ export async function commonsInfo(title, width) {
     pageUrl: ii.descriptionurl,
     width: ii.width,
     height: ii.height,
+    duration: ii.duration ?? null,
     downloadUrl: useOriginal ? ii.url : ii.thumburl,
   };
 }
