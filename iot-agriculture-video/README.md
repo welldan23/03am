@@ -55,7 +55,8 @@ Frame 0 memang hitam, karena film dibuka dengan *fade-in* dari hitam.
 | `npm run render:scene1` | Render Scene 1 saja → `out/scene1.mp4` |
 | `npm run render:preview` | Render film penuh di 960×540 (cepat, buat review) |
 | `npm run render` | Render final 1920×1080 H.264 CRF 18 → `out/iot-pertanian.mp4` |
-| `npm run fetch-assets` | Unduh ulang foto dari Wikimedia Commons + perbarui kredit lisensi |
+| `npm run search-photos -- "kata kunci" --sheet` | Cari foto berlisensi bebas di Wikimedia Commons + Openverse |
+| `npm run fetch-assets` | Unduh foto dari `asset-sources.json`, perkecil ke ukuran wajar, perbarui kredit lisensi |
 | `npm run lambda:check` | Cek kesiapan render AWS Lambda (offline, gratis) |
 | `npm run lambda:render` | Render di AWS Lambda, **default cuma dry-run** (lihat bawah) |
 
@@ -102,11 +103,13 @@ iot-agriculture-video/
 │  ├─ lib/                      time.ts (detik/timecode → frame), camera.ts (matematika kamera)
 │  └─ styles/                   theme.ts (warna, font, area aman), grades.ts (preset grading), fonts.ts
 ├─ public/assets/
-│  ├─ images/                   foto CC dari Wikimedia Commons + tekstur grain
+│  ├─ images/                   foto CC (Commons / Openverse) + tekstur grain
 │  └─ credits/CREDITS.md        tabel atribusi (dibuat otomatis)
 └─ scripts/
-   ├─ asset-sources.json        daftar foto yang dipakai (judul file Commons)
-   ├─ fetch-assets.mjs          pengunduh + penolak lisensi yang tidak bebas
+   ├─ asset-sources.json        daftar foto yang dipakai (judul Commons / id Openverse)
+   ├─ search-photos.mjs         pencarian foto + lembar kontak + --pick
+   ├─ fetch-assets.mjs          pengunduh + kompres + penolak lisensi yang tidak bebas
+   ├─ lib/                      sources.mjs (Commons, Openverse, kebijakan lisensi), image-size.mjs
    ├─ verify-timeline.ts        validator timeline & subtitle
    ├─ lambda-preflight.mjs      cek kesiapan Lambda tanpa menghubungi AWS
    └─ lambda-render.mjs        render Lambda (berpengaman, dry-run kecuali disetujui)
@@ -149,23 +152,66 @@ iot-agriculture-video/
 
 ## Aset & lisensi
 
-- **Foto asli, bukan gambar buatan.** Semua latar pemandangan di Scene 1 adalah foto
-  dari Wikimedia Commons berlisensi **CC BY / CC BY-SA**. Daftar lengkapnya, termasuk
-  pembuat dan link sumber, ada di [`public/assets/credits/CREDITS.md`](public/assets/credits/CREDITS.md).
-  `fetch-assets` otomatis **menolak** file yang lisensinya tidak bebas.
-- **Gerak "sinematik" dibuat dari kamera virtual** (pan, push-in, parallax 2.5D, kabut,
-  dan grading) di atas foto itu. Tidak ada pemandangan yang dibuat pakai CSS.
-- **Grafik teknologi** (jaringan IoT, nanti dasbor, sensor, dan irigasi) sengaja dibuat
-  prosedural/ilustratif, sesuai arahan.
-- **CC BY-SA**: hasil olahan (crop/grade) dari foto berlisensi BY-SA juga harus
-  dibagikan dengan lisensi yang sama. Kredit wajib ditampilkan di *end credits*
-  (rencananya di Scene 8) dan di deskripsi saat video diunggah.
-- **Footage video:** Pexels dan Pixabay tidak bisa diakses dari lingkungan build ini,
-  jadi sekarang semuanya foto. Kalau mau ganti ke klip video berlisensi, cukup taruh
-  file-nya di `public/assets/video/` lalu pakai `<OffthreadVideo>` di shot yang sama.
-  Kamera virtual dan grading tetap bisa dipakai.
-- **Font**: Plus Jakarta Sans dan JetBrains Mono (lisensi OFL), dibundel lewat
-  `@fontsource`, jadi tidak perlu internet saat render.
+### Cara cari & tambah foto
+
+Sumber foto: **Wikimedia Commons** dan **Openverse** (mesin pencari foto CC yang
+menggabungkan Flickr, museum, dan lain-lain). Keduanya **tidak butuh API key**.
+
+```bash
+# 1. Cari foto. --sheet membuat lembar kontak .cache/contact-sheet.jpg (thumbnail bernomor)
+npm run search-photos -- "agricultural drone spraying" --sheet
+
+# 2. Ambil hasil yang cocok (nomor dari daftar di atas) → otomatis masuk asset-sources.json
+npm run search-photos -- --pick 5 --id droneSprayPaddy --file images/s5-drone-spray-paddy.jpg
+
+# 3. Unduh + catat kredit
+npm run fetch-assets
+
+# 4. Pakai di scene
+#    const img = photo('droneSprayPaddy');
+```
+
+Aturan yang dijalankan otomatis:
+- **Lisensi**: hanya CC0, Public domain, CC BY, dan CC BY-SA, karena video ini meng-crop,
+  men-grade, dan menimpa teks. Lisensi NC/ND atau yang tidak jelas langsung dibuang.
+- **Ukuran**: hasil pencarian yang lebarnya di bawah 2400 px dibuang (atur dengan `--min-width`).
+  Foto kecil bakal pecah kalau di-zoom di 1080p. Kebanyakan foto Flickr lewat Openverse
+  cuma 500–1024 px, jadi jarang lolos.
+- **Kompres**: foto yang lebih lebar dari 3200 px diperkecil ke 3200 px. Tinggi minimal
+  tetap 1600 px, supaya panorama ultra-lebar tidak blur.
+- **Dimensi asli**: lebar/tinggi di kredit dibaca dari file hasil unduhan, bukan dari metadata
+  sumber (yang kadang tidak cocok).
+- **`npm run verify`** mengecek setiap `photo('...')` di kode benar-benar terdaftar.
+
+Pixabay dan Pexels **tidak bisa diakses** dari lingkungan build cloud ini. Kalau mau
+pakai foto atau klip dari sana, unduh manual dari laptop. Lisensi Pixabay/Pexels
+membolehkan pemakaian komersial tanpa wajib atribusi, tapi tetap catat link sumbernya.
+
+### Foto yang sudah ada (25)
+
+| Scene | Foto |
+|---|---|
+| 1 Pengantar | fajar di sawah, Jatiluwih, Tegallalang, petani panen Jawa Tengah, panorama Jatiluwih |
+| 3 Sensor | probe suhu tanah, tiang sensor bertenaga surya |
+| 4 Irigasi | saluran subak (air terjun kecil & aliran), irigasi tetes Kerala, close-up tetesan |
+| 5 Drone | drone menyemprot sawah, drone di atas ladang, drone di sawah, udara sawah Bali, petak sawah dari atas |
+| 7 Manfaat & tantangan | bulir padi, petani di terasering, tanah sawah retak, padi di tanah kering, lahan kering |
+| 8 Masa depan | petani hidroponik, deretan pakcoy, greenhouse akuaponik, petani dengan latar gunung |
+
+Scene 2 (IoT) dan Scene 6 (dasbor) lebih banyak memakai animasi prosedural di atas foto
+sawah yang sudah ada.
+
+Daftar lengkap pembuat + lisensinya: [`public/assets/credits/CREDITS.md`](public/assets/credits/CREDITS.md).
+
+### Catatan lisensi & gaya
+- **Foto asli, bukan gambar buatan.** Gerak "sinematik" berasal dari kamera virtual (pan,
+  push-in, parallax 2.5D, kabut, grading) di atas foto. Tidak ada pemandangan yang dibuat pakai CSS.
+- **Grafik teknologi** (jaringan IoT, dasbor, visual sensor, irigasi) sengaja dibuat prosedural.
+- **CC BY-SA**: hasil olahan juga harus dibagikan dengan lisensi yang sama. Kredit wajib
+  tampil di *end credits* (Scene 8) dan di deskripsi saat diunggah.
+- **Footage video**: kalau nanti ada klip berlisensi, taruh di `public/assets/video/` dan pakai
+  `<OffthreadVideo>` di shot yang sama. Kamera virtual dan grading tetap bisa dipakai.
+- **Font**: Plus Jakarta Sans dan JetBrains Mono (OFL), dibundel lewat `@fontsource`.
 
 ### Angka faktual
 

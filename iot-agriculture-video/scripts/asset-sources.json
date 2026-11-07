@@ -1,10 +1,155 @@
 {
   "$comment": "Daftar aset foto dari Wikimedia Commons. Jalankan `npm run fetch-assets` untuk mengunduh ulang + memperbarui kredit lisensi.",
   "assets": [
-    { "id": "dawnPaddy", "commonsTitle": "File:Blue Morning.jpg", "file": "images/s1-dawn-paddy.jpg", "width": 3200 },
-    { "id": "jatiluwihWide", "commonsTitle": "File:Rice terraces on Bali - Jatiluwih Rice Terraces - Indonesia 2.jpg", "file": "images/s1-jatiluwih-wide.jpg", "width": 3600 },
-    { "id": "tegallalang", "commonsTitle": "File:Tegallalang Rice Terraces Bali.jpg", "file": "images/s1-tegallalang.jpg", "width": 3600 },
-    { "id": "farmerHarvest", "commonsTitle": "File:Petani Memanen Padi di Area Sawah Tugu, Desa Tersidilor, Jawa Tengah.jpg", "file": "images/s1-farmer-harvest.jpg", "width": 3200 },
-    { "id": "jatiluwihPanorama", "commonsTitle": "File:Jatiluwih rice terraces SF0001 (cropped).jpg", "file": "images/s1-jatiluwih-panorama.jpg", "width": 6400 }
+    {
+      "id": "dawnPaddy",
+      "commonsTitle": "File:Blue Morning.jpg",
+      "file": "images/s1-dawn-paddy.jpg",
+      "width": 3200
+    },
+    {
+      "id": "jatiluwihWide",
+      "commonsTitle": "File:Rice terraces on Bali - Jatiluwih Rice Terraces - Indonesia 2.jpg",
+      "file": "images/s1-jatiluwih-wide.jpg",
+      "width": 3600
+    },
+    {
+      "id": "tegallalang",
+      "commonsTitle": "File:Tegallalang Rice Terraces Bali.jpg",
+      "file": "images/s1-tegallalang.jpg",
+      "width": 3600
+    },
+    {
+      "id": "farmerHarvest",
+      "commonsTitle": "File:Petani Memanen Padi di Area Sawah Tugu, Desa Tersidilor, Jawa Tengah.jpg",
+      "file": "images/s1-farmer-harvest.jpg",
+      "width": 3200
+    },
+    {
+      "id": "jatiluwihPanorama",
+      "commonsTitle": "File:Jatiluwih rice terraces SF0001 (cropped).jpg",
+      "file": "images/s1-jatiluwih-panorama.jpg",
+      "width": 6400
+    },
+    {
+      "id": "droneSprayPaddy",
+      "commonsTitle": "File:Agricultural drone spraying on paddy field.jpg",
+      "file": "images/s5-drone-spray-paddy.jpg",
+      "width": 3600
+    },
+    {
+      "id": "droneOverField",
+      "commonsTitle": "File:2018. Drone demonstration. Aerial Pesticide Application Training (APAT). Davis, California. (40800389955).jpg",
+      "file": "images/s5-drone-over-field.jpg",
+      "width": 3600
+    },
+    {
+      "id": "baliAerial",
+      "commonsTitle": "File:Drone view of rice plantation on bali island with path to walk around and palms. (46229046541).jpg",
+      "file": "images/s5-bali-aerial.jpg",
+      "width": 3600
+    },
+    {
+      "id": "paddyTopDown",
+      "commonsTitle": "File:Rice Fields 2.jpg",
+      "file": "images/s5-paddy-top-down.jpg",
+      "width": 3600
+    },
+    {
+      "id": "droneRiceField",
+      "commonsTitle": "File:Agricultural drone in use on rice field near Nisoshi, Aomori.jpg",
+      "file": "images/s5-drone-rice-field.jpg",
+      "width": 3600
+    },
+    {
+      "id": "soilProbe",
+      "commonsTitle": "File:Soil temperature probe.jpg",
+      "file": "images/s3-soil-probe.jpg",
+      "width": 3600
+    },
+    {
+      "id": "solarSensorMast",
+      "commonsTitle": "File:Weather station by Beach Road - geograph.org.uk - 6233639.jpg",
+      "file": "images/s3-solar-sensor-mast.jpg",
+      "width": 3600
+    },
+    {
+      "id": "dripKerala",
+      "commonsTitle": "File:Drip irrigation in Kerala.jpg",
+      "file": "images/s4-drip-kerala.jpg",
+      "width": 3600
+    },
+    {
+      "id": "dripEmitter",
+      "commonsTitle": "File:Drip emitter.jpg",
+      "file": "images/s4-drip-emitter.jpg",
+      "width": 2171
+    },
+    {
+      "id": "subakCanalFall",
+      "commonsTitle": "File:WikiSubak - Subak Aya Babahan - ES -15 Irigasi Sawah.jpg",
+      "file": "images/s4-subak-canal-fall.jpg",
+      "width": 3600
+    },
+    {
+      "id": "subakStream",
+      "commonsTitle": "File:Jatiluwih Rice Terrace - Subak Jatiluwih 47.jpg",
+      "file": "images/s4-subak-stream.jpg",
+      "width": 3600
+    },
+    {
+      "id": "riceGrainClose",
+      "commonsTitle": "File:Wiki Subak-Ceking-12.jpg",
+      "file": "images/s7-rice-grain-close.jpg",
+      "width": 3600
+    },
+    {
+      "id": "farmerMountainDawn",
+      "commonsTitle": "File:WikiSubak - Subak Umase - ES -3 Paddy Field in Bali.jpg",
+      "file": "images/s8-farmer-mountain-dawn.jpg",
+      "width": 3600
+    },
+    {
+      "id": "farmerTerraceWork",
+      "commonsTitle": "File:Wiki Subak-Ceking-10.jpg",
+      "file": "images/s7-farmer-terrace-work.jpg",
+      "width": 3600
+    },
+    {
+      "id": "crackedSoilTop",
+      "commonsTitle": "File:Tanah Sawah Kering.jpg",
+      "file": "images/s7-cracked-soil-top.jpg",
+      "width": 3600
+    },
+    {
+      "id": "riceDrySoil",
+      "commonsTitle": "File:Tanah Sawah yang Kering.jpg",
+      "file": "images/s7-rice-dry-soil.jpg",
+      "width": 3376
+    },
+    {
+      "id": "dryField",
+      "commonsTitle": "File:Sawah Subik Danau Ranau.jpg",
+      "file": "images/s7-dry-field.jpg",
+      "width": 3024
+    },
+    {
+      "id": "hydroponicFarmer",
+      "commonsTitle": "File:Hydroponic farming, an urban farming solution.jpg",
+      "file": "images/s8-hydroponic-farmer.jpg",
+      "width": 3600
+    },
+    {
+      "id": "hydroponicRows",
+      "commonsTitle": "File:Budidaya Tanaman Sayur Secara Hidroponik di Kebun SAP Garden Hidroponik, Indonesia.jpg",
+      "file": "images/s8-hydroponic-rows.jpg",
+      "width": 3600
+    },
+    {
+      "id": "greenhouseWide",
+      "commonsTitle": "File:CDC South Aquaponics Raft Tank 1 2010-07-17.jpg",
+      "file": "images/s8-greenhouse-wide.jpg",
+      "width": 3264
+    }
   ]
 }
