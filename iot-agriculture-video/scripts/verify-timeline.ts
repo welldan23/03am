@@ -3,7 +3,7 @@
  * dengan storyboard, aturan keterbacaan subtitle, dan keberadaan file aset.
  * Jalankan: npm run verify  (keluar dengan kode 1 jika ada yang gagal)
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SCENE_TIMINGS } from '../src/data/scenes';
@@ -84,6 +84,7 @@ SCENE_TIMINGS.filter((s) => s.implemented && !SUBTITLES.some((c) => c.scene === 
 
 console.log('\n▶ Aset');
 const credits = JSON.parse(readFileSync(path.join(root, 'src/data/credits.generated.json'), 'utf8')) as Array<{
+  id: string;
   file: string;
   license: string;
   author: string;
@@ -92,6 +93,19 @@ credits.forEach((c) => {
   check(existsSync(path.join(root, 'public/assets', c.file)), `${c.file} ada (${c.license}, ${c.author})`);
   if (!c.author) warn.push(`${c.file}: nama pembuat kosong`);
 });
+
+// Setiap photo('id') di kode harus ada di kredit — kalau tidak, render gagal di tengah jalan.
+const listTsx = (dir: string): string[] =>
+  readdirSync(dir).flatMap((n) => {
+    const p = path.join(dir, n);
+    return statSync(p).isDirectory() ? listTsx(p) : /\.tsx?$/.test(n) ? [p] : [];
+  });
+const knownIds = new Set(credits.map((c) => c.id));
+for (const f of listTsx(path.join(root, 'src'))) {
+  for (const m of readFileSync(f, 'utf8').matchAll(/photo\('([^']+)'\)/g)) {
+    check(knownIds.has(m[1] ?? ''), `photo('${m[1]}') di ${path.relative(root, f)} terdaftar`);
+  }
+}
 
 const impl = SCENE_TIMINGS.filter((s) => s.implemented).length;
 console.log(`\n▶ Progres: ${impl}/8 scene diimplementasikan`);

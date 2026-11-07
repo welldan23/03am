@@ -16,7 +16,8 @@
     "render:preview": "remotion render src/index.ts IoTAgriculture out/preview.mp4 --scale=0.5 --codec=h264",
     "lambda:check": "node scripts/lambda-preflight.mjs",
     "bundle": "remotion bundle src/index.ts",
-    "lambda:render": "node scripts/lambda-render.mjs"
+    "lambda:render": "node scripts/lambda-render.mjs",
+    "search-photos": "node scripts/search-photos.mjs"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "5.3.0",
