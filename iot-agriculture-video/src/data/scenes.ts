@@ -49,7 +49,7 @@ export const SCENES: readonly SceneConfig[] = [
     start: '00:30',
     end: '01:10',
     transitionIn: 'dip-to-black',
-    implemented: false,
+    implemented: true,
   },
   {
     id: 'sensors',
@@ -60,7 +60,7 @@ export const SCENES: readonly SceneConfig[] = [
     start: '01:10',
     end: '01:50',
     transitionIn: 'blur-dissolve',
-    implemented: false,
+    implemented: true,
   },
   {
     id: 'irrigation',
@@ -71,7 +71,7 @@ export const SCENES: readonly SceneConfig[] = [
     start: '01:50',
     end: '02:30',
     transitionIn: 'light-wipe',
-    implemented: false,
+    implemented: true,
   },
   {
     id: 'drones',
@@ -82,7 +82,7 @@ export const SCENES: readonly SceneConfig[] = [
     start: '02:30',
     end: '03:10',
     transitionIn: 'blur-dissolve',
-    implemented: false,
+    implemented: true,
   },
   {
     id: 'dashboard',
@@ -93,7 +93,7 @@ export const SCENES: readonly SceneConfig[] = [
     start: '03:10',
     end: '03:50',
     transitionIn: 'light-wipe',
-    implemented: false,
+    implemented: true,
   },
   {
     id: 'benefits',
@@ -104,7 +104,7 @@ export const SCENES: readonly SceneConfig[] = [
     start: '03:50',
     end: '04:30',
     transitionIn: 'dip-to-black',
-    implemented: false,
+    implemented: true,
   },
   {
     id: 'future',
@@ -115,7 +115,7 @@ export const SCENES: readonly SceneConfig[] = [
     start: '04:30',
     end: '05:00',
     transitionIn: 'fade',
-    implemented: false,
+    implemented: true,
   },
 ];
 

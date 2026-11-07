@@ -11,9 +11,8 @@ pakai [Remotion](https://www.remotion.dev/) (React + TypeScript).
 | Audio | Tidak ada narasi, suara, atau dialog |
 | Subtitle | Bahasa Indonesia, di-render langsung ke video (burned-in) |
 
-> **Status: Scene 1 (00:00–00:30) selesai.** Scene 2–8 masih *placeholder*
-> (kartu abu-abu berisi judul & timecode), jadi timeline penuh 7.200 frame tetap
-> bisa di-preview. Scene berikutnya dikerjakan setelah Scene 1 di-review.
+> **Status: 8/8 scene selesai.** Film penuh 5 menit bisa di-preview dan di-render.
+> Angka di grafik/dasbor yang bertanda **DATA ILUSTRASI** adalah contoh, bukan pengukuran.
 
 ---
 
@@ -78,7 +77,7 @@ iot-agriculture-video/
 │  ├─ compositions/
 │  │  └─ IoTAgriculture.tsx     merakit timeline dari data/scenes.ts (tanpa angka waktu sendiri)
 │  ├─ scenes/
-│  │  ├─ Scene01Intro.tsx       Scene 1: 5 shot + sekuens judul
+│  │  ├─ Scene01Intro.tsx … Scene08Future.tsx   satu file per scene (daftar shot di komentar atas)
 │  │  ├─ index.ts               registry scene → komponen (yang belum ada = placeholder)
 │  │  └─ types.ts
 │  ├─ components/
@@ -129,16 +128,16 @@ iot-agriculture-video/
 
 ## Storyboard
 
-| # | Waktu | Frame | Judul | Transisi masuk | Status |
+| # | Waktu | Frame | Judul | Transisi masuk | Isi visual |
 |---|---|---|---|---|---|
-| 1 | 00:00–00:30 | 0–720 | Pengantar: sawah Nusantara | fade dari hitam | ✅ |
-| 2 | 00:30–01:10 | 720–1680 | Apa itu Internet of Things? | dip-to-black | placeholder |
-| 3 | 01:10–01:50 | 1680–2640 | Sensor tanah & lingkungan | blur-dissolve | placeholder |
-| 4 | 01:50–02:30 | 2640–3600 | Irigasi otomatis | light-wipe | placeholder |
-| 5 | 02:30–03:10 | 3600–4560 | Drone pertanian | blur-dissolve | placeholder |
-| 6 | 03:10–03:50 | 4560–5520 | Dasbor pertanian cerdas | light-wipe | placeholder |
-| 7 | 03:50–04:30 | 5520–6480 | Manfaat & tantangan | dip-to-black | placeholder |
-| 8 | 04:30–05:00 | 6480–7200 | Masa depan pertanian cerdas | fade | placeholder |
+| 1 | 00:00–00:30 | 0–720 | Pengantar: sawah Nusantara | fade dari hitam | 4 foto sawah + sekuens judul + cuplikan jaringan IoT |
+| 2 | 00:30–01:10 | 720–1680 | Apa itu Internet of Things? | dip-to-black | Sensor bermunculan di sawah Bali → diagram alur Sensor → Gateway → Cloud → Ponsel → Aksi |
+| 3 | 01:10–01:50 | 1680–2640 | Sensor tanah & lingkungan | blur-dissolve | Stasiun sensor surya berlabel → penampang tanah (air meresap ke zona akar) → panel suhu/pH/kelembapan |
+| 4 | 01:50–02:30 | 2640–3600 | Irigasi otomatis | light-wipe | Saluran subak → skema katup otomatis 4 petak → irigasi tetes |
+| 5 | 02:30–03:10 | 3600–4560 | Drone pertanian | blur-dissolve | Drone menyemprot → HUD survei rute zig-zag → peta kesehatan tanaman |
+| 6 | 03:10–03:50 | 4560–5520 | Dasbor pertanian cerdas | light-wipe | Dasbor lengkap, kamera virtual berpindah antar-panel |
+| 7 | 03:50–04:30 | 5520–6480 | Manfaat & tantangan | dip-to-black | Daftar manfaat & tantangan di atas foto sawah |
+| 8 | 04:30–05:00 | 6480–7200 | Masa depan pertanian cerdas | fade | Hidroponik → pesan penutup → kredit foto → hitam |
 
 ### Rincian Scene 1
 
@@ -149,6 +148,16 @@ iot-agriculture-video/
 | C · Tegallalang | 00:11–00:17 | Terasering Tegallalang, Gianyar | Tilt-down + push-in |
 | D · Petani | 00:16.5–00:22.5 | Panen padi, Jawa Tengah | Push-in ke subjek, angka rumah tangga tani |
 | E · Judul | 00:22–00:30 | Panorama Jatiluwih | Pan pelan + sekuens judul + cuplikan jaringan sensor IoT |
+
+Rincian shot scene lain ada di komentar paling atas tiap file `src/scenes/SceneNN*.tsx`.
+
+### Kejujuran data
+- Angka faktual (luas sawah, jumlah rumah tangga tani) punya sumber di `src/data/facts.ts`
+  dan ikut tampil di layar serta kredit penutup.
+- Angka di sensor, dasbor, telemetri drone, dan peta kesehatan tanaman **dibuat untuk
+  menjelaskan cara kerja**, dan selalu diberi label *DATA ILUSTRASI*.
+- Scene 7 (manfaat & tantangan) sengaja kualitatif. Tidak ada persentase tanpa sumber.
+- Foto yang diambil di luar Indonesia diberi label lokasi aslinya (Kerala, India; Aomori, Jepang).
 
 ## Aset & lisensi
 
@@ -202,6 +211,14 @@ Scene 2 (IoT) dan Scene 6 (dasbor) lebih banyak memakai animasi prosedural di at
 sawah yang sudah ada.
 
 Daftar lengkap pembuat + lisensinya: [`public/assets/credits/CREDITS.md`](public/assets/credits/CREDITS.md).
+
+### Kenapa tidak pakai foto dari situs berita (Antara, Kompas, dll.)?
+
+Foto di situs berita **dilindungi hak cipta (all rights reserved)**, bukan berlisensi bebas.
+Tampil di internet bukan berarti boleh dipakai ulang. Antara Foto menjual lisensinya secara
+komersial, jadi memakainya tanpa izin berisiko *takedown* atau klaim hak cipta. Kalau nanti
+lisensinya dibeli, taruh filenya di `public/assets/images/` dan daftarkan seperti foto lain,
+dengan kredit sesuai kontrak lisensinya.
 
 ### Catatan lisensi & gaya
 - **Foto asli, bukan gambar buatan.** Gerak "sinematik" berasal dari kamera virtual (pan,

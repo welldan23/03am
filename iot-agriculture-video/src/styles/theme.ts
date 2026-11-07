@@ -31,3 +31,19 @@ export const textShadow = '0 2px 18px rgba(0,0,0,0.55), 0 1px 3px rgba(0,0,0,0.6
 
 /** Bayangan lembut di belakang teks pojok — tetap terbaca di atas langit cerah. */
 export const cornerScrim = 'radial-gradient(ellipse at center, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.18) 45%, rgba(0,0,0,0) 72%)';
+
+/** Panel data: gelap tembus pandang, garis tipis — tenang, bukan hologram. */
+export const panel = {
+  background: 'rgba(10, 16, 13, 0.62)',
+  border: '1px solid rgba(244, 241, 234, 0.14)',
+  borderRadius: 14,
+  backdropFilter: 'blur(10px)',
+  boxShadow: '0 18px 50px rgba(0,0,0,0.35)',
+} as const;
+
+/** Warna status (sehat → perlu perhatian), dipakai peta, grafik, dan dasbor. */
+export const status = {
+  good: '#9cc95c',
+  fair: '#e7c45a',
+  poor: '#e08a5f',
+} as const;
