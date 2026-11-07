@@ -19,7 +19,8 @@
     "lambda:render": "node scripts/lambda-render.mjs",
     "search-photos": "node scripts/search-photos.mjs",
     "voiceover:script": "tsx scripts/voiceover.ts script",
-    "voiceover:scan": "tsx scripts/voiceover.ts scan"
+    "voiceover:scan": "tsx scripts/voiceover.ts scan",
+    "make-sfx": "node scripts/make-sfx.mjs"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "5.3.0",

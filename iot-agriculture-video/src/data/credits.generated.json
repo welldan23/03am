@@ -337,5 +337,61 @@
     "width": 0,
     "height": 0,
     "durationSec": 301.7225850340136
+  },
+  {
+    "id": "ambDawnBirds",
+    "kind": "audio",
+    "file": "audio/amb-dawn-birds.mp3",
+    "provider": "wikimedia-commons",
+    "title": "Dawn chorus at Glencairnie big bungalow Craigmore DM.ogg",
+    "author": "DivyaCM",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dawn_chorus_at_Glencairnie_big_bungalow_Craigmore_DM.ogg",
+    "width": 0,
+    "height": 0,
+    "durationSec": 484.4930612244898
+  },
+  {
+    "id": "ambCicadaJava",
+    "kind": "audio",
+    "file": "audio/amb-cicada-java.mp3",
+    "provider": "wikimedia-commons",
+    "title": "東ジャワ州セミの鳴き声2026-03-29.ogg",
+    "author": "Cun Cun",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:%E6%9D%B1%E3%82%B8%E3%83%A3%E3%83%AF%E5%B7%9E%E3%82%BB%E3%83%9F%E3%81%AE%E9%B3%B4%E3%81%8D%E5%A3%B02026-03-29.ogg",
+    "width": 0,
+    "height": 0,
+    "durationSec": 87.27354166666667
+  },
+  {
+    "id": "ambStream",
+    "kind": "audio",
+    "file": "audio/amb-stream.mp3",
+    "provider": "wikimedia-commons",
+    "title": "433589 jackthemurray stream-river-water-up-close.wav",
+    "author": "jackthemurray",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:433589_jackthemurray_stream-river-water-up-close.wav",
+    "width": 0,
+    "height": 0,
+    "durationSec": 68.88933333333334
+  },
+  {
+    "id": "ambRain",
+    "kind": "audio",
+    "file": "audio/amb-rain.mp3",
+    "provider": "wikimedia-commons",
+    "title": "Rain (1).ogg",
+    "author": "ezwa",
+    "license": "Public domain",
+    "licenseUrl": null,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rain_(1).ogg",
+    "width": 0,
+    "height": 0,
+    "durationSec": 44.95673469387755
   }
 ]

@@ -2,6 +2,7 @@ import { AbsoluteFill, Sequence } from 'remotion';
 import { FilmGrain, Vignette } from '../components/FilmLook';
 import { PlaceholderScene } from '../components/PlaceholderScene';
 import { SceneShell } from '../components/SceneShell';
+import { SoundEffects } from '../components/SoundEffects';
 import { Soundtrack } from '../components/Soundtrack';
 import { Subtitles } from '../components/Subtitles';
 import { SCENE_TIMINGS, type SceneTiming } from '../data/scenes';
@@ -57,6 +58,7 @@ export const IoTAgriculture: React.FC = () => (
     <LensFinish />
     <Subtitles cues={SUBTITLES} />
     <Soundtrack />
+    <SoundEffects />
   </AbsoluteFill>
 );
 
@@ -80,6 +82,7 @@ export const SingleScene: React.FC<{ sceneId: SceneTiming['id'] }> = ({ sceneId 
       <LensFinish />
       <Subtitles cues={SUBTITLES} offset={scene.startFrame} />
       <Soundtrack offset={scene.startFrame} />
+      <SoundEffects offset={scene.startFrame} />
     </AbsoluteFill>
   );
 };

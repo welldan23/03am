@@ -7,6 +7,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SCENE_TIMINGS } from '../src/data/scenes';
+import { SFX_CUES } from '../src/data/sfx';
 import { SUBTITLE_RULES, SUBTITLES } from '../src/data/subtitles';
 import { FPS, HEIGHT, TOTAL_FRAMES, WIDTH } from '../src/data/video';
 import { formatTc } from '../src/lib/time';
@@ -106,6 +107,12 @@ for (const f of listTsx(path.join(root, 'src'))) {
     check(knownIds.has(m[1] ?? ''), `photo('${m[1]}') di ${path.relative(root, f)} terdaftar`);
   }
 }
+
+console.log('\n▶ Efek suara');
+const sfxFiles = ['whoosh', 'impact', 'tick', 'blip', 'alert', 'valve', 'drip', 'scan', 'drone-loop', 'wind-loop'];
+sfxFiles.forEach((f) => check(existsSync(path.join(root, 'public/assets/sfx', `${f}.wav`)), `sfx/${f}.wav ada`));
+const badSfx = SFX_CUES.filter((c) => c.startFrame < 0 || c.startFrame >= TOTAL_FRAMES || c.volume <= 0 || c.volume > 1);
+check(badSfx.length === 0, `${SFX_CUES.length} cue efek suara di dalam durasi film & volume 0–1`);
 
 const impl = SCENE_TIMINGS.filter((s) => s.implemented).length;
 console.log(`\n▶ Progres: ${impl}/8 scene diimplementasikan`);

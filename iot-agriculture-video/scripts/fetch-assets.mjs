@@ -53,12 +53,14 @@ for (const a of assets) {
     await mkdir(path.dirname(out), { recursive: true });
 
     if (a.kind === 'audio') {
-      // Audio: unduh file asli lalu ubah ke MP3 192 kbps (didukung Chrome & Remotion).
+      // Audio: unduh file asli lalu ubah ke MP3 192 kbps 48 kHz (didukung Chrome & Remotion).
       if (force || !(await exists(out))) {
         const src = await http(info.downloadUrl, { json: false });
         const tmp = `${out}.src`;
         await writeFile(tmp, src);
-        execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', tmp, '-vn', '-c:a', 'libmp3lame', '-b:a', '192k', out]);
+        // `filter` opsional (mis. high-pass untuk membuang dengung mesin di rekaman alam).
+        const af = a.filter ? ['-af', a.filter] : [];
+        execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', tmp, '-vn', ...af, '-ar', '48000', '-c:a', 'libmp3lame', '-b:a', '192k', out]);
         await rm(tmp, { force: true });
         console.log(`  ↳ disimpan ${a.file}`);
       } else {

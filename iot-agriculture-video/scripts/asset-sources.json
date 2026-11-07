@@ -156,6 +156,34 @@
       "kind": "audio",
       "commonsTitle": "File:Scott Buckley - Affirmations.oga",
       "file": "audio/affirmations.mp3"
+    },
+    {
+      "id": "ambDawnBirds",
+      "kind": "audio",
+      "commonsTitle": "File:Dawn chorus at Glencairnie big bungalow Craigmore DM.ogg",
+      "file": "audio/amb-dawn-birds.mp3",
+      "filter": "highpass=f=150,lowpass=f=12000,loudnorm=I=-24:TP=-3:LRA=11"
+    },
+    {
+      "id": "ambCicadaJava",
+      "kind": "audio",
+      "commonsTitle": "File:東ジャワ州セミの鳴き声2026-03-29.ogg",
+      "file": "audio/amb-cicada-java.mp3",
+      "filter": "highpass=f=150,lowpass=f=12000,loudnorm=I=-24:TP=-3:LRA=11"
+    },
+    {
+      "id": "ambStream",
+      "kind": "audio",
+      "commonsTitle": "File:433589 jackthemurray stream-river-water-up-close.wav",
+      "file": "audio/amb-stream.mp3",
+      "filter": "highpass=f=150,lowpass=f=12000,loudnorm=I=-24:TP=-3:LRA=11"
+    },
+    {
+      "id": "ambRain",
+      "kind": "audio",
+      "commonsTitle": "File:Rain (1).ogg",
+      "file": "audio/amb-rain.mp3",
+      "filter": "highpass=f=150,lowpass=f=12000,loudnorm=I=-24:TP=-3:LRA=11"
     }
   ]
 }

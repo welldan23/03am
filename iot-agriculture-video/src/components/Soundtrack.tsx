@@ -2,20 +2,9 @@ import { Audio, interpolate, Sequence, useVideoConfig } from 'remotion';
 import { SOUNDTRACK, soundtrackSrc } from '../data/audio';
 import { TOTAL_FRAMES } from '../data/video';
 import { HAS_VOICEOVER, VO_CLIPS, voSrc } from '../data/voiceover';
+import { speaking } from '../lib/voiceDuck';
 
 const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
-
-/** 1 = narator sedang bicara di frame t (dengan ramp halus), 0 = diam. */
-const speaking = (t: number): number => {
-  const r = SOUNDTRACK.duckRampFrames;
-  let v = 0;
-  for (const c of VO_CLIPS) {
-    const end = c.startFrame + c.durationInFrames;
-    if (t < c.startFrame - r || t > end + r) continue;
-    v = Math.max(v, interpolate(t, [c.startFrame - r, c.startFrame, end, end + r], [0, 1, 1, 0], clamp));
-  }
-  return v;
-};
 
 interface AudioProps {
   /** Mulai dari frame ke berapa di timeline utama (untuk komposisi per-scene). */
