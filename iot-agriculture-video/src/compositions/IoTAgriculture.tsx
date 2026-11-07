@@ -6,6 +6,7 @@ import { SoundEffects } from '../components/SoundEffects';
 import { Soundtrack } from '../components/Soundtrack';
 import { Subtitles } from '../components/Subtitles';
 import { SCENE_TIMINGS, type SceneTiming } from '../data/scenes';
+import { SFX_ENABLED } from '../data/sfx';
 import { SUBTITLES } from '../data/subtitles';
 import { SCENE_TRANSITION_FRAMES, TOTAL_FRAMES } from '../data/video';
 import { SCENE_COMPONENTS } from '../scenes';
@@ -58,7 +59,7 @@ export const IoTAgriculture: React.FC = () => (
     <LensFinish />
     <Subtitles cues={SUBTITLES} />
     <Soundtrack />
-    <SoundEffects />
+    {SFX_ENABLED ? <SoundEffects /> : null}
   </AbsoluteFill>
 );
 
@@ -82,7 +83,7 @@ export const SingleScene: React.FC<{ sceneId: SceneTiming['id'] }> = ({ sceneId 
       <LensFinish />
       <Subtitles cues={SUBTITLES} offset={scene.startFrame} />
       <Soundtrack offset={scene.startFrame} />
-      <SoundEffects offset={scene.startFrame} />
+      {SFX_ENABLED ? <SoundEffects offset={scene.startFrame} /> : null}
     </AbsoluteFill>
   );
 };

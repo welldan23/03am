@@ -1,6 +1,7 @@
 import { AbsoluteFill, interpolate, useCurrentFrame } from 'remotion';
 import { AUDIO_CREDITS, PHOTO_CREDITS } from '../data/assets';
 import { FACTS } from '../data/facts';
+import { SFX_ENABLED } from '../data/sfx';
 import { VIDEO_SUBTITLE, VIDEO_TITLE } from '../data/video';
 import { colors, fonts } from '../styles/theme';
 
@@ -41,12 +42,13 @@ export const EndCredits: React.FC<{ durationInFrames: number }> = ({ durationInF
           </div>
         ))}
       </div>
-      <div style={{ marginTop: 26, fontFamily: fonts.mono, fontSize: 17, letterSpacing: '0.3em', color: colors.rice, opacity: listP }}>MUSIK &amp; SUARA</div>
+      <div style={{ marginTop: 26, fontFamily: fonts.mono, fontSize: 17, letterSpacing: '0.3em', color: colors.rice, opacity: listP }}>{SFX_ENABLED ? 'MUSIK & SUARA' : 'MUSIK'}</div>
       {AUDIO_CREDITS.filter((a) => a.id.startsWith('music')).map((a) => (
         <div key={a.id} style={{ marginTop: 10, fontSize: 21, opacity: listP }}>
           “{a.title.replace(/^.* - /, '').replace(/\.[a-z0-9]+$/i, '')}” — {a.author} <span style={{ fontFamily: fonts.mono, fontSize: 16, color: colors.paperDim }}>· {a.license}</span>
         </div>
       ))}
+      {SFX_ENABLED ? (
       <div style={{ marginTop: 10, fontSize: 18, color: colors.paperDim, opacity: listP }}>
         Suara alam:{' '}
         {AUDIO_CREDITS.filter((a) => !a.id.startsWith('music'))
@@ -54,6 +56,7 @@ export const EndCredits: React.FC<{ durationInFrames: number }> = ({ durationInF
           .join(' · ')}{' '}
         · Efek sintetis buatan sendiri
       </div>
+      ) : null}
       <div style={{ marginTop: 22, fontSize: 18, color: colors.paperDim, textAlign: 'center', lineHeight: 1.6, opacity: listP }}>
         Foto dari Wikimedia Commons; daftar lengkap judul & tautan di CREDITS.md. Foto CC BY-SA yang diolah dibagikan dengan lisensi yang sama.
         <br />

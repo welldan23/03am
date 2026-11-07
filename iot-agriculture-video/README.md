@@ -8,7 +8,7 @@ pakai [Remotion](https://www.remotion.dev/) (React + TypeScript).
 | Resolusi | 1920×1080 (16:9) |
 | Frame rate | 24 fps |
 | Durasi | **7.200 frame = 300 detik**, dicek otomatis oleh `npm run verify` |
-| Audio | Musik instrumental + efek suara & suasana alam (tanpa suara orang). Siap ditambah voice-over manual |
+| Audio | Musik latar instrumental saja (tanpa vokal). Siap ditambah voice-over manual |
 | Subtitle | Bahasa Indonesia, di-render langsung ke video (burned-in) |
 
 > **Status: 8/8 scene selesai.** Film penuh 5 menit bisa di-preview dan di-render.
@@ -259,7 +259,10 @@ string, dan synth, **tanpa vokal**. Durasinya 301,8 detik, jadi cukup satu lagu 
 film. Ada fade-in 2,5 detik di awal dan fade-out 5 detik di akhir. Atribusi otomatis tampil di
 kredit penutup (bagian MUSIK). Pengaturan volume ada di `src/data/audio.ts`.
 
-### Efek suara & suasana
+### Efek suara & suasana (saat ini DIMATIKAN)
+Atas permintaan, film memakai **musik latar saja**. Semua efek di bawah tetap tersimpan dan bisa
+dinyalakan lagi dengan mengubah `SFX_ENABLED = true` di `src/data/sfx.ts`.
+
 Ada dua jenis, semuanya **tanpa suara orang**:
 
 | Jenis | Isi | Sumber |

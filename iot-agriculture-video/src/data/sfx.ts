@@ -11,6 +11,12 @@ import { FPS } from './video';
  * TIDAK ada suara orang. Waktu `at` dalam detik, relatif ke awal scene (boleh negatif
  * sedikit untuk whoosh yang dimulai tepat sebelum transisi).
  */
+/**
+ * Saklar efek suara. Atas permintaan owner, film memakai MUSIK LATAR SAJA,
+ * jadi efek & suasana dimatikan. Ganti ke `true` untuk menyalakannya lagi.
+ */
+export const SFX_ENABLED = false;
+
 export type SoundId =
   | 'birds'
   | 'cicada'
