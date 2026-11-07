@@ -8,7 +8,7 @@ pakai [Remotion](https://www.remotion.dev/) (React + TypeScript).
 | Resolusi | 1920×1080 (16:9) |
 | Frame rate | 24 fps |
 | Durasi | **7.200 frame = 300 detik**, dicek otomatis oleh `npm run verify` |
-| Audio | Musik instrumental (tanpa vokal). Siap ditambah voice-over rekaman manual |
+| Audio | Musik instrumental + efek suara & suasana alam (tanpa suara orang). Siap ditambah voice-over manual |
 | Subtitle | Bahasa Indonesia, di-render langsung ke video (burned-in) |
 
 > **Status: 8/8 scene selesai.** Film penuh 5 menit bisa di-preview dan di-render.
@@ -56,6 +56,7 @@ Frame 0 memang hitam, karena film dibuka dengan *fade-in* dari hitam.
 | `npm run render` | Render final 1920×1080 H.264 CRF 18 → `out/iot-pertanian.mp4` |
 | `npm run search-photos -- "kata kunci" --sheet` | Cari foto berlisensi bebas di Wikimedia Commons + Openverse |
 | `npm run fetch-assets` | Unduh foto dari `asset-sources.json`, perkecil ke ukuran wajar, perbarui kredit lisensi |
+| `npm run make-sfx` | Buat ulang efek suara sintetis → `public/assets/sfx/*.wav` |
 | `npm run voiceover:script` | Buat naskah rekaman (`voiceover/NASKAH-VOICEOVER.md`) + `voiceover/subtitles.srt` |
 | `npm run voiceover:scan` | Deteksi rekaman di `public/assets/voiceover/`, cek durasinya, aktifkan ducking musik |
 | `npm run lambda:check` | Cek kesiapan render AWS Lambda (offline, gratis) |
@@ -100,6 +101,7 @@ iot-agriculture-video/
 │  │  ├─ subtitles.ts           semua teks layar (waktu relatif ke awal scene)
 │  │  ├─ facts.ts               angka faktual + sumbernya
 │  │  ├─ audio.ts               musik latar & level volume
+│  │  ├─ sfx.ts                 109 cue efek suara per scene
 │  │  ├─ voiceover.ts           rekaman voice-over (dari voiceover.generated.json)
 │  │  ├─ assets.ts              akses foto bertipe + kredit
 │  │  └─ credits.generated.json dibuat oleh fetch-assets (lisensi, pembuat, URL sumber)
@@ -115,6 +117,7 @@ iot-agriculture-video/
    ├─ lib/                      sources.mjs (Commons, Openverse, kebijakan lisensi), image-size.mjs
    ├─ verify-timeline.ts        validator timeline & subtitle
    ├─ voiceover.ts              naskah rekaman, .srt, dan pemindai rekaman
+   ├─ make-sfx.mjs              generator efek suara sintetis
    ├─ lambda-preflight.mjs      cek kesiapan Lambda tanpa menghubungi AWS
    └─ lambda-render.mjs        render Lambda (berpengaman, dry-run kecuali disetujui)
 ```
@@ -255,6 +258,19 @@ Angka yang muncul di layar disimpan di `src/data/facts.ts` lengkap dengan sumber
 string, dan synth, **tanpa vokal**. Durasinya 301,8 detik, jadi cukup satu lagu untuk seluruh
 film. Ada fade-in 2,5 detik di awal dan fade-out 5 detik di akhir. Atribusi otomatis tampil di
 kredit penutup (bagian MUSIK). Pengaturan volume ada di `src/data/audio.ts`.
+
+### Efek suara & suasana
+Ada dua jenis, semuanya **tanpa suara orang**:
+
+| Jenis | Isi | Sumber |
+|---|---|---|
+| Suasana alam | Burung fajar (Nilgiri), tonggeret (Mojokerto, Jawa Timur), aliran air, hujan | Wikimedia Commons (CC BY / CC BY-SA / CC0 / domain publik). Dibuang dengung rendahnya (high-pass 150 Hz) dan diseragamkan ke −24 LUFS |
+| Efek sintetis | Whoosh transisi, dentum judul, tik UI, blip data, alarm, katup, tetesan, sapuan pemindai, dengung drone, angin | Dibuat sendiri dari rumus oleh `scripts/make-sfx.mjs`, tanpa sampel rekaman |
+
+Ada 109 cue, ditulis per scene di `src/data/sfx.ts` (waktu relatif ke awal scene, sama seperti
+subtitle) dan disinkronkan ke animasinya. Contohnya: katup berbunyi "klek" saat terbuka di skema
+irigasi, alarm saat petak kering terdeteksi, dan dengung drone di Scene 5. Kalau ada voice-over,
+semua efek otomatis turun ke 45% saat narator bicara.
 
 ### Voice-over (rekaman suara sendiri)
 Film ini disiapkan untuk dinarasikan **manual** dengan membacakan subtitle-nya.
