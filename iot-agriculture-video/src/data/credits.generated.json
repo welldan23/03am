@@ -1,0 +1,57 @@
+[
+  {
+    "id": "dawnPaddy",
+    "file": "images/s1-dawn-paddy.jpg",
+    "title": "Blue Morning.jpg",
+    "author": "Dzikra Imron",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Blue_Morning.jpg",
+    "width": 3200,
+    "height": 1798
+  },
+  {
+    "id": "jatiluwihWide",
+    "file": "images/s1-jatiluwih-wide.jpg",
+    "title": "Rice terraces on Bali - Jatiluwih Rice Terraces - Indonesia 2.jpg",
+    "author": "Thomas Fuhrmann",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rice_terraces_on_Bali_-_Jatiluwih_Rice_Terraces_-_Indonesia_2.jpg",
+    "width": 3600,
+    "height": 2400
+  },
+  {
+    "id": "tegallalang",
+    "file": "images/s1-tegallalang.jpg",
+    "title": "Tegallalang Rice Terraces Bali.jpg",
+    "author": "Philip Nalangan",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Tegallalang_Rice_Terraces_Bali.jpg",
+    "width": 3600,
+    "height": 2394
+  },
+  {
+    "id": "farmerHarvest",
+    "file": "images/s1-farmer-harvest.jpg",
+    "title": "Petani Memanen Padi di Area Sawah Tugu, Desa Tersidilor, Jawa Tengah.jpg",
+    "author": "Anjas Imaji",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Petani_Memanen_Padi_di_Area_Sawah_Tugu,_Desa_Tersidilor,_Jawa_Tengah.jpg",
+    "width": 3200,
+    "height": 2400
+  },
+  {
+    "id": "jatiluwihPanorama",
+    "file": "images/s1-jatiluwih-panorama.jpg",
+    "title": "Jatiluwih rice terraces SF0001 (cropped).jpg",
+    "author": "Stefan Fussan",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Jatiluwih_rice_terraces_SF0001_(cropped).jpg",
+    "width": 6400,
+    "height": 1409
+  }
+]

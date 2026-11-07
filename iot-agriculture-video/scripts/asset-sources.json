@@ -1,0 +1,10 @@
+{
+  "$comment": "Daftar aset foto dari Wikimedia Commons. Jalankan `npm run fetch-assets` untuk mengunduh ulang + memperbarui kredit lisensi.",
+  "assets": [
+    { "id": "dawnPaddy", "commonsTitle": "File:Blue Morning.jpg", "file": "images/s1-dawn-paddy.jpg", "width": 3200 },
+    { "id": "jatiluwihWide", "commonsTitle": "File:Rice terraces on Bali - Jatiluwih Rice Terraces - Indonesia 2.jpg", "file": "images/s1-jatiluwih-wide.jpg", "width": 3600 },
+    { "id": "tegallalang", "commonsTitle": "File:Tegallalang Rice Terraces Bali.jpg", "file": "images/s1-tegallalang.jpg", "width": 3600 },
+    { "id": "farmerHarvest", "commonsTitle": "File:Petani Memanen Padi di Area Sawah Tugu, Desa Tersidilor, Jawa Tengah.jpg", "file": "images/s1-farmer-harvest.jpg", "width": 3200 },
+    { "id": "jatiluwihPanorama", "commonsTitle": "File:Jatiluwih rice terraces SF0001 (cropped).jpg", "file": "images/s1-jatiluwih-panorama.jpg", "width": 6400 }
+  ]
+}

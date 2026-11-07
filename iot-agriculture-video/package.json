@@ -1,0 +1,36 @@
+{
+  "name": "iot-pertanian-dokumenter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dokumenter edukasi 5 menit: IoT Pertanian Inovatif — Transformasi Menuju Pertanian Cerdas (Remotion)",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "verify": "tsx scripts/verify-timeline.ts",
+    "check": "npm run typecheck && npm run verify",
+    "fetch-assets": "node scripts/fetch-assets.mjs",
+    "still": "remotion still src/index.ts IoTAgriculture out/still.png",
+    "render": "remotion render src/index.ts IoTAgriculture out/iot-pertanian.mp4 --codec=h264 --crf=18",
+    "render:scene1": "remotion render src/index.ts Scene1-Intro out/scene1.mp4 --codec=h264 --crf=18",
+    "render:preview": "remotion render src/index.ts IoTAgriculture out/preview.mp4 --scale=0.5 --codec=h264",
+    "lambda:check": "node scripts/lambda-preflight.mjs",
+    "bundle": "remotion bundle src/index.ts",
+    "lambda:render": "node scripts/lambda-render.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
+    "@fontsource-variable/plus-jakarta-sans": "5.3.0",
+    "@remotion/cli": "4.0.538",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
+    "remotion": "4.0.538"
+  },
+  "devDependencies": {
+    "@remotion/lambda": "4.0.538",
+    "@types/node": "22.10.2",
+    "@types/react": "19.2.0",
+    "tsx": "4.19.2",
+    "typescript": "5.9.3"
+  }
+}
