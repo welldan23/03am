@@ -184,6 +184,66 @@
       "commonsTitle": "File:Rain (1).ogg",
       "file": "audio/amb-rain.mp3",
       "filter": "highpass=f=150,lowpass=f=12000,loudnorm=I=-24:TP=-3:LRA=11"
+    },
+    {
+      "id": "mCattlePasture",
+      "commonsTitle": "File:Bali Cattle.jpg",
+      "file": "images/m-cattle-pasture.jpg",
+      "width": 3600
+    },
+    {
+      "id": "mCattleBarn",
+      "commonsTitle": "File:WikiSubak - Tegalalang - ES -50 - sapi.jpg",
+      "file": "images/m-cattle-barn.jpg",
+      "width": 3600
+    },
+    {
+      "id": "mShrimpPond",
+      "commonsTitle": "File:Tambak Udang Padang Pariaman 2020.jpg",
+      "file": "images/m-shrimp-pond.jpg",
+      "width": 3600
+    },
+    {
+      "id": "mFishpondJuwana",
+      "commonsTitle": "File:Tambak udang dan bandeng di Juwana.jpg",
+      "file": "images/m-fishpond-juwana.jpg",
+      "width": 3600
+    },
+    {
+      "id": "mTeaSidamanik",
+      "commonsTitle": "File:Kebun teh sidamanik.jpg",
+      "file": "images/m-tea-sidamanik.jpg",
+      "width": 3600
+    },
+    {
+      "id": "mTeaMountain",
+      "commonsTitle": "File:Kebun Teh Danau Kembar 11.jpg",
+      "file": "images/m-tea-mountain.jpg",
+      "width": 3600
+    },
+    {
+      "id": "mTeaWonosari",
+      "commonsTitle": "File:Landskap kebun teh Wonosari.jpg",
+      "file": "images/m-tea-wonosari.jpg",
+      "width": 3600
+    },
+    {
+      "id": "mChiliField",
+      "commonsTitle": "File:Jaringan Listrik dan Tanaman Cabai - panoramio.jpg",
+      "file": "images/m-chili-field.jpg",
+      "width": 3600
+    },
+    {
+      "id": "mChiliPlant",
+      "commonsTitle": "File:Tanaman Cabai Rawit.jpg",
+      "file": "images/m-chili-plant.jpg",
+      "width": 3072
+    },
+    {
+      "id": "musicChasingDaylight",
+      "kind": "audio",
+      "commonsTitle": "File:Scott Buckley - Chasing Daylight.oga",
+      "file": "audio/chasing-daylight.mp3"
     }
   ]
 }

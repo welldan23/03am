@@ -11,6 +11,7 @@ import { SFX_CUES } from '../src/data/sfx';
 import { SUBTITLE_RULES, SUBTITLES } from '../src/data/subtitles';
 import { FPS, HEIGHT, TOTAL_FRAMES, WIDTH } from '../src/data/video';
 import { formatTc } from '../src/lib/time';
+import { MATERI_CUES, MATERI_MUSIC, MATERI_SCENES, MATERI_TOTAL_FRAMES } from '../src/films/materi/timeline';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const errors: string[] = [];
@@ -107,6 +108,40 @@ for (const f of listTsx(path.join(root, 'src'))) {
     check(knownIds.has(m[1] ?? ''), `photo('${m[1]}') di ${path.relative(root, f)} terdaftar`);
   }
 }
+
+// ── Film 2: Materi lengkap 8 menit ─────────────────────────────────────
+console.log('\n▶ Film 2 · Materi lengkap (8 menit)');
+check(MATERI_TOTAL_FRAMES === 11520, `Total frame = ${MATERI_TOTAL_FRAMES} (harus 11.520 = 480 detik)`);
+check(MATERI_SCENES[0]?.startFrame === 0, 'Scene pertama mulai di frame 0');
+check(MATERI_SCENES[MATERI_SCENES.length - 1]?.endFrame === MATERI_TOTAL_FRAMES, 'Scene terakhir berakhir tepat di akhir film');
+MATERI_SCENES.forEach((sc, i) => {
+  const nx = MATERI_SCENES[i + 1];
+  if (nx && sc.endFrame !== nx.startFrame) errors.push(`Film 2: scene ${sc.number} tidak bersambung dengan scene ${nx.number}`);
+});
+ok(`${MATERI_SCENES.length} scene bersambung, jumlah durasi ${MATERI_SCENES.reduce((a, x) => a + x.durationInFrames, 0)} frame`);
+let filmErr = 0;
+MATERI_CUES.forEach((c, i) => {
+  const dur = (c.endFrame - c.startFrame) / FPS;
+  const cps = c.text.replace(/\n/g, ' ').length / dur;
+  const lines = c.text.split('\n');
+  const sc = MATERI_SCENES.find((x) => x.id === c.scene);
+  const label = `Film 2 [${formatTc(c.startFrame)}] "${c.text.replace(/\n/g, ' / ')}"`;
+  const fail = (m: string): void => {
+    errors.push(`${label}: ${m}`);
+    filmErr++;
+  };
+  if (dur < R.minDurationSec) fail(`durasi ${dur.toFixed(2)}s`);
+  if (cps > R.maxCharsPerSecond) fail(`${cps.toFixed(1)} karakter/detik`);
+  if (lines.length > R.maxLines) fail(`${lines.length} baris`);
+  lines.forEach((l) => l.length > R.maxCharsPerLine && fail(`baris ${l.length} karakter`));
+  if (sc && (c.startFrame < sc.startFrame || c.endFrame > sc.endFrame)) fail('keluar dari rentang scene');
+  const prev = MATERI_CUES[i - 1];
+  if (prev && c.startFrame - prev.endFrame < R.minGapSec * FPS) fail('jeda terlalu dekat');
+});
+if (!filmErr) ok(`${MATERI_CUES.length} subtitle lolos aturan keterbacaan`);
+MATERI_MUSIC.forEach((m) =>
+  check(m.trimBeforeFrames >= 0 && m.startFrame + m.durationInFrames <= MATERI_TOTAL_FRAMES, `Musik ${m.creditId}: ${formatTc(m.startFrame)} → ${formatTc(m.startFrame + m.durationInFrames)}`),
+);
 
 console.log('\n▶ Efek suara');
 const sfxFiles = ['whoosh', 'impact', 'tick', 'blip', 'alert', 'valve', 'drip', 'scan', 'drone-loop', 'wind-loop'];

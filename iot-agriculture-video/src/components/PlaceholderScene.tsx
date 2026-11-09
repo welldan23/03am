@@ -1,5 +1,5 @@
 import { AbsoluteFill, interpolate, useCurrentFrame } from 'remotion';
-import type { SceneTiming } from '../data/scenes';
+import type { FilmScene } from '../lib/film';
 import { formatTc } from '../lib/time';
 import { colors, fonts } from '../styles/theme';
 
@@ -7,7 +7,7 @@ import { colors, fonts } from '../styles/theme';
  * Penanda scene yang BELUM diimplementasikan. Sengaja polos supaya jelas di
  * preview bahwa ini bukan hasil akhir; timeline 7.200 frame tetap utuh.
  */
-export const PlaceholderScene: React.FC<{ scene: SceneTiming }> = ({ scene }) => {
+export const PlaceholderScene: React.FC<{ scene: FilmScene }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const progress = frame / scene.durationInFrames;
   return (

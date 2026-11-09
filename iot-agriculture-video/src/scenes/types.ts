@@ -1,5 +1,5 @@
-import type { SceneTiming } from '../data/scenes';
+import type { FilmScene } from '../lib/film';
 
 export interface SceneProps {
-  scene: SceneTiming;
+  scene: FilmScene;
 }

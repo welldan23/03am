@@ -20,7 +20,9 @@
     "search-photos": "node scripts/search-photos.mjs",
     "voiceover:script": "tsx scripts/voiceover.ts script",
     "voiceover:scan": "tsx scripts/voiceover.ts scan",
-    "make-sfx": "node scripts/make-sfx.mjs"
+    "make-sfx": "node scripts/make-sfx.mjs",
+    "render:materi": "remotion render src/index.ts MateriIoT8Menit out/materi-8menit.mp4 --codec=h264 --crf=18",
+    "render:materi:preview": "remotion render src/index.ts MateriIoT8Menit out/materi-8menit-preview.mp4 --scale=0.5 --codec=h264"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "5.3.0",

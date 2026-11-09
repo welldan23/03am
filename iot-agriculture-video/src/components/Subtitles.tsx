@@ -1,9 +1,8 @@
 import { AbsoluteFill, interpolate, useCurrentFrame } from 'remotion';
-import type { SubtitleCue } from '../data/subtitles';
 import { fonts, safe } from '../styles/theme';
 
 interface SubtitlesProps {
-  cues: readonly SubtitleCue[];
+  cues: ReadonlyArray<{ startFrame: number; endFrame: number; text: string }>;
   /** Geser waktu (frame) — dipakai komposisi per-scene agar cue absolut tetap pas. */
   offset?: number;
 }

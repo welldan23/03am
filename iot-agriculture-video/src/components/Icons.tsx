@@ -1,7 +1,7 @@
 import { colors } from '../styles/theme';
 
 /** Ikon garis sederhana (viewBox 48×48). Sengaja polos agar serasi dengan tipografi. */
-export type IconName = 'sensor' | 'gateway' | 'cloud' | 'phone' | 'valve' | 'drone' | 'sun' | 'drop' | 'leaf' | 'alert' | 'chart' | 'coin' | 'signal' | 'people';
+export type IconName = 'sensor' | 'gateway' | 'cloud' | 'phone' | 'valve' | 'drone' | 'sun' | 'drop' | 'leaf' | 'alert' | 'chart' | 'coin' | 'signal' | 'people' | 'eye' | 'brain' | 'hand' | 'nerve' | 'wifi' | 'fan' | 'thermo' | 'layers' | 'target' | 'steps';
 
 const PATHS: Record<IconName, string> = {
   sensor: 'M24 6v22 M18 28h12v8l-6 6-6-6z M14 14a14 14 0 0 1 20 0 M10 9a20 20 0 0 1 28 0',
@@ -18,6 +18,16 @@ const PATHS: Record<IconName, string> = {
   coin: 'M24 8a16 16 0 1 1 0 32a16 16 0 1 1 0-32 M24 15v18 M29 18c-1-2-3-3-5-3c-3 0-5 2-5 4c0 5 10 3 10 9c0 2-2 4-5 4c-2 0-4-1-5-3',
   signal: 'M8 40V34 M17 40V27 M26 40V20 M35 40V12 M6 8l36 32',
   people: 'M17 18a6 6 0 1 1 0-12a6 6 0 1 1 0 12 M5 40c0-8 5-14 12-14s12 6 12 14 M33 20a5 5 0 1 1 0-10a5 5 0 1 1 0 10 M31 26c7 0 12 5 12 12',
+  eye: 'M4 24c6-10 13-15 20-15s14 5 20 15c-6 10-13 15-20 15S10 34 4 24z M24 17a7 7 0 1 1 0 14a7 7 0 1 1 0-14',
+  brain: 'M24 8c-3-3-9-2-10 3c-5 0-7 6-4 9c-3 3-2 9 3 10c0 5 6 8 11 4 M24 8c3-3 9-2 10 3c5 0 7 6 4 9c3 3 2 9-3 10c0 5-6 8-11 4 M24 8v26 M17 18c3 0 4 3 7 3 M31 25c-3 0-4-3-7-3',
+  hand: 'M16 40V20a3 3 0 0 1 6 0v8 M22 26V12a3 3 0 0 1 6 0v14 M28 24V14a3 3 0 0 1 6 0v14 M34 26v-6a3 3 0 0 1 6 0v8c0 8-5 14-13 14h-3c-6 0-9-3-12-8l-4-7a3 3 0 0 1 5-3l3 4',
+  nerve: 'M6 24h8l4-10 6 20 5-14 3 4h10 M6 24a2 2 0 1 0 0 0.1 M42 24a2 2 0 1 0 0 0.1',
+  wifi: 'M8 20a22 22 0 0 1 32 0 M13 26a15 15 0 0 1 22 0 M18 32a8 8 0 0 1 12 0 M24 38v0.1',
+  fan: 'M24 21a3 3 0 1 1 0 6a3 3 0 1 1 0-6 M24 21c-2-8 2-14 8-12s3 10-5 13 M27 25c8-2 14 2 12 8s-10 3-13-5 M22 27c-6 6-13 6-14 0s7-8 13-3 M6 6h36v36H6z',
+  thermo: 'M20 30V10a4 4 0 0 1 8 0v20a8 8 0 1 1-8 0z M24 18v16',
+  layers: 'M24 6l18 9-18 9-18-9z M6 24l18 9 18-9 M6 33l18 9 18-9',
+  target: 'M24 6a18 18 0 1 1 0 36a18 18 0 1 1 0-36 M24 14a10 10 0 1 1 0 20a10 10 0 1 1 0-20 M24 22a2 2 0 1 1 0 4a2 2 0 1 1 0-4',
+  steps: 'M6 40h10v-9h10v-9h10v-9h6 M36 7l6 6-6 6',
 };
 
 export const Icon: React.FC<{ name: IconName; size?: number; color?: string; strokeWidth?: number }> = ({

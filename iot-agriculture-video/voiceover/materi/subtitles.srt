@@ -1,0 +1,399 @@
+1
+00:00:01,000 --> 00:00:05,000
+Indonesia adalah negeri agraris yang
+kaya sawah, kebun, dan laut.
+
+2
+00:00:06,000 --> 00:00:11,000
+Jutaan keluarga menggantungkan hidup
+pada hasil pertanian.
+
+3
+00:00:12,500 --> 00:00:17,500
+Namun petani menghadapi tantangan baru:
+cuaca tak menentu dan biaya yang naik.
+
+4
+00:00:18,750 --> 00:00:24,000
+Air makin langka, lahan makin sempit,
+dan hama sulit diprediksi.
+
+5
+00:00:36,000 --> 00:00:40,750
+Internet of Things (IoT) adalah jaringan
+benda yang terhubung lewat internet.
+
+6
+00:00:41,500 --> 00:00:45,750
+Di pertanian, bendanya bisa berupa sensor,
+pompa, katup, hingga drone.
+
+7
+00:00:46,500 --> 00:00:51,000
+Sistem IoT punya empat komponen utama.
+
+8
+00:00:51,750 --> 00:00:56,500
+Pertama, sensor, ibarat indra yang
+merasakan kondisi lahan.
+
+9
+00:00:57,250 --> 00:01:02,000
+Kedua, konektivitas, ibarat saraf
+yang mengirimkan data.
+
+10
+00:01:02,750 --> 00:01:07,500
+Ketiga, platform cloud, ibarat otak
+yang mengolah data.
+
+11
+00:01:08,250 --> 00:01:13,500
+Keempat, aplikasi dan aktuator, ibarat
+tangan yang bertindak.
+
+12
+00:01:14,250 --> 00:01:19,000
+Keempatnya bekerja dalam satu siklus
+yang terus berulang.
+
+13
+00:01:21,000 --> 00:01:25,500
+Sistem IoT pertanian biasanya disusun
+dalam empat lapisan.
+
+14
+00:01:26,250 --> 00:01:30,500
+Lapisan perangkat: sensor dan aktuator
+di lahan.
+
+15
+00:01:31,250 --> 00:01:35,000
+Lapisan jaringan mengirimkan datanya.
+
+16
+00:01:35,750 --> 00:01:40,000
+Lapisan pengolahan menyimpan dan
+menganalisis data.
+
+17
+00:01:40,750 --> 00:01:44,500
+Lapisan aplikasi menampilkannya
+kepada petani.
+
+18
+00:01:46,000 --> 00:01:50,500
+Pilihan jaringan menentukan jangkauan
+dan daya tahan baterai.
+
+19
+00:01:51,250 --> 00:01:55,750
+LoRa menjangkau beberapa kilometer
+dengan daya sangat hemat.
+
+20
+00:01:56,500 --> 00:02:00,250
+NB-IoT dan 4G memakai sinyal
+operator seluler.
+
+21
+00:02:01,000 --> 00:02:04,500
+Wi-Fi cocok untuk area dekat,
+seperti greenhouse.
+
+22
+00:02:06,000 --> 00:02:11,000
+Sensor adalah ujung tombak IoT.
+Mari mengenal jenis-jenisnya.
+
+23
+00:02:13,000 --> 00:02:17,000
+Sensor kelembapan tanah memberi tahu
+kapan tanaman perlu disiram.
+
+24
+00:02:17,583 --> 00:02:21,583
+Sensor suhu & kelembapan udara membantu
+mewaspadai penyakit jamur.
+
+25
+00:02:22,208 --> 00:02:26,208
+Sensor pH menunjukkan tingkat keasaman,
+agar pemupukan tepat.
+
+26
+00:02:26,792 --> 00:02:30,792
+Sensor NPK mengukur nitrogen, fosfor,
+dan kalium di tanah.
+
+27
+00:02:31,417 --> 00:02:35,417
+Penakar hujan mencatat curah hujan,
+sehingga irigasi bisa ditunda.
+
+28
+00:02:36,000 --> 00:02:40,000
+Sensor cahaya mengukur sinar matahari
+yang diterima tanaman.
+
+29
+00:02:40,583 --> 00:02:44,583
+Sensor ketinggian air dipakai
+di sawah dan tambak.
+
+30
+00:02:45,208 --> 00:02:49,583
+Kamera dan AI mengenali gejala hama
+dan penyakit pada daun.
+
+31
+00:02:51,000 --> 00:02:55,500
+Contoh pertama: sawah padi yang
+hemat air.
+
+32
+00:02:56,250 --> 00:02:58,750
+Padi tidak harus selalu tergenang.
+
+33
+00:02:59,500 --> 00:03:04,500
+Teknik basah-kering berselang (AWD):
+sawah dikeringkan sebentar, lalu diairi.
+
+34
+00:03:05,250 --> 00:03:10,000
+Pipa berlubang ditanam di petak sawah
+untuk melihat air di dalam tanah.
+
+35
+00:03:10,750 --> 00:03:15,500
+Sensor di dalam pipa mengukur
+ketinggian air setiap saat.
+
+36
+00:03:16,250 --> 00:03:21,000
+Saat air turun sekitar 15 cm
+di bawah permukaan tanah…
+
+37
+00:03:21,750 --> 00:03:26,000
+…pompa atau pintu air terbuka otomatis.
+
+38
+00:03:26,750 --> 00:03:31,500
+Menurut IRRI, cara ini bisa menghemat
+air irigasi hingga sekitar 30%.
+
+39
+00:03:32,250 --> 00:03:37,000
+Hasil panen tetap terjaga, dan
+emisi gas metana ikut berkurang.
+
+40
+00:03:37,750 --> 00:03:44,000
+Petani tak perlu lagi bolak-balik
+ke sawah hanya untuk mengecek air.
+
+41
+00:03:46,000 --> 00:03:50,500
+Contoh kedua: greenhouse dan
+kebun hidroponik.
+
+42
+00:03:53,250 --> 00:03:57,750
+Di greenhouse, sensor memantau suhu,
+kelembapan, dan cahaya.
+
+43
+00:03:58,500 --> 00:04:03,250
+Saat suhu melewati batas, misalnya 32°C,
+kipas dan pengabut menyala otomatis.
+
+44
+00:04:04,000 --> 00:04:08,250
+Suhu turun kembali, tanaman
+terhindar dari stres panas.
+
+45
+00:04:09,000 --> 00:04:13,750
+Di tangki nutrisi, sensor EC dan pH
+mengukur kepekatan larutan.
+
+46
+00:04:14,500 --> 00:04:19,250
+Jika nutrisi kurang pekat, pompa dosis
+menambahkan larutan A dan B.
+
+47
+00:04:20,000 --> 00:04:25,500
+Petani cukup memantau dari ponsel,
+bahkan saat berada jauh dari kebun.
+
+48
+00:04:26,250 --> 00:04:34,000
+Hasilnya: tanaman tumbuh seragam
+dan air nutrisi tidak terbuang.
+
+49
+00:04:36,000 --> 00:04:40,750
+Contoh ketiga: peternakan
+dan perikanan.
+
+50
+00:04:41,500 --> 00:04:46,000
+Sapi bisa dipasangi kalung sensor
+berisi GPS dan sensor gerak.
+
+51
+00:04:46,750 --> 00:04:51,250
+Jika aktivitasnya tiba-tiba turun,
+peternak mendapat peringatan dini.
+
+52
+00:04:52,000 --> 00:04:56,500
+Sakit atau birahi pun lebih cepat
+terdeteksi, tanpa harus menebak.
+
+53
+00:04:57,250 --> 00:05:02,000
+Di tambak udang, kadar oksigen terlarut
+sangat menentukan hidup-matinya udang.
+
+54
+00:05:02,750 --> 00:05:07,500
+Oksigen biasanya turun pada malam hari
+hingga menjelang subuh.
+
+55
+00:05:08,250 --> 00:05:13,000
+Sensor oksigen memantaunya terus-menerus,
+siang dan malam.
+
+56
+00:05:13,750 --> 00:05:18,500
+Saat oksigen turun di bawah batas,
+kincir air menyala otomatis.
+
+57
+00:05:19,250 --> 00:05:24,250
+Pakan pun diberikan terjadwal oleh
+pemberi pakan otomatis.
+
+58
+00:05:26,000 --> 00:05:30,500
+Contoh keempat: kebun dan
+perkebunan yang luas.
+
+59
+00:05:31,250 --> 00:05:35,750
+Di sini, IoT membantu mengawasi
+ribuan tanaman sekaligus.
+
+60
+00:05:36,500 --> 00:05:41,000
+Stasiun cuaca mencatat suhu, kelembapan,
+hujan, dan basah daun.
+
+61
+00:05:41,750 --> 00:05:46,500
+Daun yang lama basah dan udara lembap
+meningkatkan risiko penyakit jamur.
+
+62
+00:05:47,250 --> 00:05:52,000
+Sistem memberi peringatan dini, sebelum
+penyakit menyebar ke seluruh kebun.
+
+63
+00:05:52,750 --> 00:05:57,500
+Drone memetakan kebun dan menandai
+blok yang perlu diperiksa.
+
+64
+00:05:58,250 --> 00:06:03,000
+Di kebun cabai dan sayuran, sensor tanah
+membantu penyiraman dan pemupukan.
+
+65
+00:06:03,750 --> 00:06:09,000
+Semua data dari lahan yang luas
+terkumpul di satu layar.
+
+66
+00:06:11,000 --> 00:06:15,500
+Semua data bermuara di dasbor,
+di ponsel atau komputer.
+
+67
+00:06:16,250 --> 00:06:21,000
+Petani melihat kondisi tiap petak
+secara langsung.
+
+68
+00:06:21,750 --> 00:06:26,500
+Grafik menunjukkan tren kelembapan
+dari hari ke hari.
+
+69
+00:06:27,250 --> 00:06:32,000
+Peta menandai petak yang perlu
+didahulukan.
+
+70
+00:06:32,750 --> 00:06:37,500
+Peringatan datang otomatis, misalnya
+saat hujan akan turun.
+
+71
+00:06:38,250 --> 00:06:43,000
+Data cuaca membantu menunda irigasi,
+sehingga air lebih hemat.
+
+72
+00:06:43,750 --> 00:06:48,500
+Makin lama data terkumpul, makin akurat
+prediksi yang bisa dibuat.
+
+73
+00:06:49,250 --> 00:06:54,000
+Keputusan pun berdasarkan data,
+bukan lagi tebakan.
+
+74
+00:06:56,000 --> 00:07:00,500
+Manfaatnya: air dan pupuk lebih hemat,
+masalah terdeteksi lebih awal.
+
+75
+00:07:01,250 --> 00:07:08,000
+Hasil panen lebih terjaga, dan petani
+bekerja lebih efisien.
+
+76
+00:07:09,250 --> 00:07:13,750
+Tantangannya: biaya perangkat
+masih terasa mahal.
+
+77
+00:07:14,500 --> 00:07:21,000
+Sinyal di desa belum merata,
+dan petani perlu pendampingan.
+
+78
+00:07:22,250 --> 00:07:26,750
+Cara memulainya: pilih satu masalah
+yang paling penting dulu.
+
+79
+00:07:27,500 --> 00:07:31,500
+Mulai dengan satu atau dua sensor,
+patungan lewat kelompok tani.
+
+80
+00:07:32,000 --> 00:07:34,750
+Lalu perluas sedikit demi sedikit.
+
+81
+00:07:44,500 --> 00:07:49,000
+Mari wujudkan pertanian Indonesia
+yang cerdas dan berkelanjutan.

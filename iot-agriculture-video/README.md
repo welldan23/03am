@@ -14,6 +14,40 @@ pakai [Remotion](https://www.remotion.dev/) (React + TypeScript).
 > **Status: 8/8 scene selesai.** Film penuh 5 menit bisa di-preview dan di-render.
 > Angka di grafik/dasbor yang bertanda **DATA ILUSTRASI** adalah contoh, bukan pengukuran.
 
+## Film 2: Materi Lengkap (8 menit)
+
+Video kedua yang terpisah: **"IoT Pertanian Inovatif: Materi Lengkap & Contoh Penerapan"**,
+durasi **8:00 (11.520 frame)**, komposisi `MateriIoT8Menit`. Komponen yang dipakai sama dengan
+film 5 menit (kamera, subtitle, dasbor, dan lain-lain), ditambah ilustrasi baru.
+
+| # | Waktu | Materi | Ilustrasi |
+|---|---|---|---|
+| 1 | 00:00–00:35 | Pembuka: pertanian Indonesia & tantangannya | Foto sawah + judul + jaringan sensor |
+| 2 | 00:35–01:20 | Apa itu IoT, 4 komponen | Kartu sensor/konektivitas/cloud/aktuator, analogi indra-saraf-otak-tangan |
+| 3 | 01:20–02:05 | Arsitektur 4 lapisan + pilihan jaringan | Tumpukan lapisan (data naik, perintah turun); perbandingan LoRa/NB-IoT/4G/Wi-Fi |
+| 4 | 02:05–02:50 | 8 jenis sensor | Galeri ilustrasi sensor + penjelasan "mengukur apa / gunanya" |
+| 5 | 02:50–03:45 | **Contoh 1: sawah padi hemat air (AWD)** | Penampang sawah, pipa berlubang + sensor, ambang −15 cm, pintu air otomatis |
+| 6 | 03:45–04:35 | **Contoh 2: greenhouse & hidroponik** | Penampang greenhouse, kipas, pengabut, pompa dosis A/B, sensor EC/pH |
+| 7 | 04:35–05:25 | **Contoh 3: peternakan & perikanan** | Kalung sensor sapi (aktivitas, GPS, pagar virtual); tambak udang (oksigen, kincir, pakan) |
+| 8 | 05:25–06:10 | **Contoh 4: kebun & perkebunan** | Risiko penyakit jamur di kebun teh, drone survei, sensor kebun cabai |
+| 9 | 06:10–06:55 | Dari data ke keputusan | Dasbor dengan kamera virtual |
+| 10 | 06:55–07:35 | Manfaat, tantangan, cara memulai | Daftar poin di atas foto |
+| 11 | 07:35–08:00 | Penutup | Pesan penutup + kredit |
+
+- **Musik**: "Chasing Daylight" disambung crossfade 8 detik ke "Affirmations" (keduanya oleh Scott Buckley, CC BY 4.0),
+  dan film berakhir tepat di ujung alami lagu kedua.
+- **Kode**: `src/films/materi/` berisi `timeline.ts` (data scene, subtitle, musik, fakta), `components/`
+  (ilustrasi baru), dan `scenes/` (11 scene).
+- **Fakta baru**: ambang AWD 15 cm di bawah permukaan dan hemat air hingga ±30%, sumbernya IRRI.
+  Cek ulang sebelum publikasi.
+- **Voice-over**: `npm run voiceover:script -- materi` membuat `voiceover/materi/NASKAH-VOICEOVER.md` (81 kalimat).
+  Rekaman ditaruh di `public/assets/voiceover/materi/`, lalu jalankan `npm run voiceover:scan -- materi`.
+
+```bash
+npm run render:materi:preview   # 960×540, cepat
+npm run render:materi           # final 1080p → out/materi-8menit.mp4
+```
+
 ---
 
 ## Mulai cepat

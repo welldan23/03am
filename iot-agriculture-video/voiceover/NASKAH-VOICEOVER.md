@@ -1,4 +1,4 @@
-# Naskah Voice-Over — IoT Pertanian Inovatif
+# Naskah Voice-Over — IoT Pertanian Inovatif (5 menit)
 
 Dibuat otomatis oleh `npm run voiceover:script` dari `src/data/subtitles.ts`. Jangan diedit manual —
 ubah teksnya di `subtitles.ts`, lalu jalankan ulang perintahnya.
@@ -12,7 +12,7 @@ ubah teksnya di `subtitles.ts`, lalu jalankan ulang perintahnya.
 3. Usahakan durasi bicara **≤ kolom "Ruang bicara"**. Ruang = sampai kalimat berikutnya mulai.
    Kalimat bertanda ⚠ cukup padat: baca sedikit lebih cepat atau ringkas jedanya.
 4. Taruh semua file di `public/assets/voiceover/`, lalu jalankan:
-   `npm run voiceover:scan` → cek peringatan → `npm run render`.
+   `npm run voiceover:scan` → cek peringatan → render.
 5. Musik otomatis mengecil jadi latar, dan "minggir" lagi setiap kamu bicara.
 
 Alternatif: rekam satu file utuh 5 menit sambil menonton video, beri nama `full.wav`.
